@@ -1,0 +1,467 @@
+﻿<script type="text/javascript" src="template.js"></script>
+<template>
+    <style>
+        .MarvalSoftware-Jira {
+            display: none;
+        }
+
+        .window .MarvalSoftware-Jira {
+            display: block;
+        }
+
+        .MarvalSoftware-Jira {
+            position: absolute;
+            top: 26px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+            .MarvalSoftware-Jira a {
+                color: #3B73AF;
+            }
+
+            .MarvalSoftware-Jira > .header {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                line-height: 30px;
+            }
+
+                .MarvalSoftware-Jira > .header > a {
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    right: 0;
+                    text-decoration: none;
+                }
+
+            .MarvalSoftware-Jira > .issues {
+                position: absolute;
+                top: 50px;
+                bottom: 82px;
+                left: 10px;
+                right: 10px;
+                overflow: auto;
+                border: 1px solid #000;
+                background: no-repeat center center;
+            }
+
+                .MarvalSoftware-Jira > .issues > .issue {
+                    position: relative;
+                    padding: 10px;
+                    height: 30px;
+                    line-height: 30px;
+                }
+
+                    .MarvalSoftware-Jira > .issues > .issue:nth-child(even) {
+                        background: #EBF2F9;
+                    }
+
+                    .MarvalSoftware-Jira > .issues > .issue > .left {
+                        position: absolute;
+                        left: 0;
+                        right: 200px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+
+                        .MarvalSoftware-Jira > .issues > .issue > .left > * {
+                            margin-left: 10px;
+                        }
+
+                        .MarvalSoftware-Jira > .issues > .issue > .left > a {
+                            text-decoration: none;
+                        }
+
+                        .MarvalSoftware-Jira > .issues > .issue > .left > .status {
+                            display: inline-block;
+                            padding: 0 10px;
+                            border: 1px solid #DDD;
+                            border-radius: 5px;
+                            background: #FFF;
+                        }
+
+                    .MarvalSoftware-Jira > .issues > .issue > .right {
+                        position: absolute;
+                        right: 0;
+                        width: 200px;
+                    }
+
+                        .MarvalSoftware-Jira > .issues > .issue > .right > .assignee {
+                            box-sizing: border-box;
+                            position: absolute;
+                            right: 60px;
+                            padding: 0 10px;
+                            width: 140px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            text-align: center;
+                        }
+
+                        .MarvalSoftware-Jira > .issues > .issue > .right > .unlink {
+                            position: absolute;
+                            right: 10px;
+                            width: 50px;
+                            text-align: center;
+                            text-decoration: none;
+                            color: #F00;
+                        }
+
+            .MarvalSoftware-Jira > .newIssue {
+                position: absolute;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                height: 62px;
+            }
+
+                .MarvalSoftware-Jira > .newIssue > h1 {
+                    margin-bottom: 10px;
+                    line-height: 30px;
+                }
+
+                .MarvalSoftware-Jira > .newIssue > select {
+                    box-sizing: border-box;
+                    position: absolute;
+                    left: 0;
+                    padding: 2px;
+                    height: 22px;
+                    max-width: 100px;
+                    min-width: 100px;
+                    width: 100px;
+                    border: 1px solid #CCC;
+                }
+
+                .MarvalSoftware-Jira > .newIssue > div {
+                    position: absolute;
+                    left: 110px;
+                    right: 90px;
+                }
+
+                    .MarvalSoftware-Jira > .newIssue > div > input {
+                        box-sizing: border-box;
+                        padding: 2px;
+                        height: 22px;
+                        width: 100%;
+                        border: 1px solid #CCC;
+                    }
+
+                .MarvalSoftware-Jira > .newIssue > button {
+                    box-sizing: border-box;
+                    position: absolute;
+                    right: 0;
+                    padding: 2px;
+                    height: 22px;
+                    width: 80px;
+                    border: 1px solid #CCC;
+                    border-radius: 2px;
+                    background: #F5F5F5;
+                }
+    </style>
+    <div class="MarvalSoftware-Jira">
+        <div class="header">
+            <h1>Linked Issues</h1>
+            <a href="javascript:void(0);">Link</a>
+        </div>
+        <div class="issues">
+        </div>
+        <div class="newIssue">
+            <h1>New Issue</h1>
+            <select>
+                <option value="Story">Story</option>
+                <option value="Task">Task</option>
+                <option value="Bug">Bug</option>
+            </select>
+            <div>
+                <input type="text" placeholder="Summary" class="text" maxlength="255" />
+            </div>
+            <button>Create</button>
+        </div>
+    </div>
+</template>
+<template class="issueTemplate">
+    <div class="issue">
+        <div class="left">
+            <a href="javascript:void(0);" target="_blank" class="number"></a>
+            <span class="status"></span>
+            <span class="summary"></span>
+        </div>
+        <div class="right">
+            <span class="assignee"></span>
+            <a href="javascript:void(0);" class="unlink">Unlink</a>
+        </div>
+    </div>
+</template>
+<template class="errorTemplate">
+    <style>
+        .MarvalSoftware-Jira-Errors h3,
+        .MarvalSoftware-Jira-Errors h4 {
+            padding: 8px 0 8px 0;
+        }
+
+        .jiraConfig > li {
+            display: none;
+        }
+    </style>
+    <div class="MarvalSoftware-Jira-Errors">
+        <div class="title">
+            <h3>Ensure all configuration settings are correct.</h3>
+        </div>
+        <div>
+            <ul class="jiraConfig">
+                <li id="jiraBaseUrl"> JIRA Base Url </li>
+                <li id="jiraProject"> JIRA Project </li>
+                <li id="jiraCustomFieldID"> JIRA Customfield ID </li>
+                <li id="jiraCustomFieldName"> JIRA Customfield Name </li>
+                <li id="jiraUsername"> JIRA Username</li>
+                <li id="jiraPassword"> JIRA Password </li>
+            </ul>
+            <h4></h4>
+        </div>
+    </div>
+</template>
+<script>
+    (function () {
+        
+        var MarvalSoftware = window.top.MarvalSoftware;
+        var $ = window.top.$;
+
+        MarvalSoftware.Plugins.define("MarvalSoftware-Jira",
+        {
+            _pluginPath: null,
+            _requestNumber: null,
+            _element: null,
+            _issuesElement: null,
+            _typeElement: null,
+            _summaryElement: null,
+            _createElement: null,
+            _renderIssuesRequest: null,
+
+            init: function () {
+                this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
+                if (this._requestNumber) {
+                    this._setUpQuickMenu();
+                }
+            },
+
+            _renderIssue: function (issue) {
+                var issueTemplate = document.querySelector(".issueTemplate").content;
+                var issueElement = window.top.document.importNode(issueTemplate, true);
+                var numberElement = issueElement.querySelector(".number");
+                numberElement.textContent = issue.key;
+                numberElement.href = issue.self;
+                numberElement.href = numberElement.protocol + "//" + numberElement.hostname + (numberElement.port ? ":" + numberElement.port : "") + "/browse/" + issue.key;
+                issueElement.querySelector(".status").textContent = issue.fields.status.name;
+                issueElement.querySelector(".summary").textContent = issue.fields.summary;
+                issueElement.querySelector(".summary").title = issue.fields.summary;
+                issueElement.querySelector(".assignee").textContent = issue.fields.assignee ? issue.fields.assignee.displayName : "";
+                issueElement.querySelector(".unlink").setAttribute("data-issue-number", issue.key);
+                if (!this._issuesElement.textContent.indexOf(issueElement.textContent) != -1) {
+                    this._issuesElement.appendChild(issueElement);
+                }
+            },
+
+            _renderIssues: function () {
+                if (this._renderIssuesRequest) {
+                    this._renderIssuesRequest.abort();
+                    this._renderIssuesRequest = null;
+                }
+                this._renderIssuesRequest = $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/JiraHandler.ashx?requestNumber=" + this._requestNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._issuesElement.style.backgroundImage = "";
+                        result.issues.forEach(this._renderIssue.bind(this));
+                    }.bind(this),
+                    error: function () {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _createNewIssue: function (issueSummary, issueType) {
+                $.ajax({
+                    type: "POST",
+                    url: this._getPluginPath() + "handler/JiraHandler.ashx?requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._renderIssue(result);
+                        this._summaryElement.value = "";
+                    }.bind(this),
+                    error: function () {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _unlinkIssue: function (issueNumber) {
+                $.ajax({
+                    type: "DELETE",
+                    url: this._getPluginPath() + "handler/JiraHandler.ashx?issueNumber=" + issueNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function () {
+                        this._issuesElement.removeChild(this._issuesElement.querySelector('[data-issue-number="' + issueNumber + '"]').parentNode.parentNode);
+                    }.bind(this)
+                });
+            },
+
+            _linkIssue: function (issueNumber) {
+                $.ajax({
+                    type: "PUT",
+                    url: this._getPluginPath() + "handler/JiraHandler.ashx?requestNumber=" + this._requestNumber + "&issueNumber=" + issueNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._renderIssue(result);
+                    }.bind(this)
+                });
+            },
+
+            _renderElement: function () {
+                var template = document.querySelector('template').content;
+                this._element = window.top.document.importNode(template, true);
+                var eventManager = MarvalSoftware.UI.Dom.EventManager.getInstance();
+                eventManager.addHandler(this._element.querySelector(".header > a"), "click", this._linkElement_click, this);
+                this._issuesElement = this._element.querySelector(".issues");
+                this._issuesElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
+                eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
+                this._typeElement = this._element.querySelector("select");
+                this._summaryElement = this._element.querySelector("input");
+                this._createElement = this._element.querySelector("button");
+                eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
+                this.appendChild(this._element);
+            },
+
+            _popup: function () {
+                if (!this._pluginWindow) {
+                    this._pluginWindow = new MarvalSoftware.UI.Window({
+                        appendToElement: window.top.document.getElementById("aspnetForm"),
+                        title: "JIRA",
+                        height: 680,
+                        width: 700,
+                        minHeight: 262,
+                        minWidth: 432,
+                        isResizable: true,
+                        isMaximizable: true,
+                        bodyElement: this
+                    });
+                    this._renderElement();
+                    this._renderIssues();
+                }
+                if (!this._pluginWindow.isVisible()) {
+                    this._pluginWindow.centerToViewport();
+                }
+                this._pluginWindow.show();
+            },
+
+            _errorPopup: function (result) {
+                var errorTemplate = document.querySelector('.errorTemplate').content;
+                var errorMessages = window.top.document.importNode(errorTemplate, true);
+                if (result) {
+                    for (var item in result) {
+                        var id = "#" + item;
+                        errorMessages.querySelector(id).style.display = "block";
+                    }
+                    errorMessages.querySelector('div > h3').textContent = "The following settings have not been configured:";
+                    errorMessages.querySelector('div > h4').textContent = "Please add these via the plugin page";
+                }
+                MarvalSoftware.UI.MessageBox.show(
+                    "Invalid JIRA Configuration",
+                    errorMessages,
+                    MarvalSoftware.UI.MessageBox.Types.ERROR,
+                    [MarvalSoftware.UI.MessageBox.Buttons.OK],
+                    MarvalSoftware.UI.MessageBox.Buttons.OK,
+                    450
+                 );
+            },
+
+            _getPluginPath: function () {
+                return this.attributes["data-pluginpath"].value;
+            },
+
+            _setUpQuickMenu: function () {
+                var styleElement = window.top.document.createElement("style");
+                window.top.document.body.appendChild(styleElement);
+                styleElement.sheet.insertRule(".MarvalSoftware-Jira-quick-menu-item { background-image: url(" + this._getPluginPath() + "img/jira_32.png); }", 0);
+
+                var quickMenuId = window.top.document.querySelector(".quickMenu").id;
+                var quickMenu = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getControl(quickMenuId);
+                quickMenu.addMenuItem({
+                    Identifier: "MarvalSoftware-Jira",
+                    Label: "JIRA",
+                    HRef: "javascript:void(0);",
+                    CssClass: "MarvalSoftware-Jira-quick-menu-item"
+                });
+                quickMenu.onMenuItemClicked.subscribe(function (sender, e) {
+                    if (e.menuItem.getIdentifier() === "MarvalSoftware-Jira") {
+                        this._preRequisiteCheck();
+                    }
+                }, this);
+            },
+
+            _preRequisiteCheck: function (sender, e) {
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/JiraHandler.ashx?preReq=true",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        if (Object.keys(result).length > 0) {
+                            this._errorPopup(result);
+                        }
+                        else {
+                            this._popup();
+                        }
+                    }.bind(this)
+                });
+            },
+
+            _linkElement_click: function () {
+                var divElement = window.top.document.createElement("DIV");
+                divElement.innerHTML = 'Please enter a JIRA issue number below (e.g ABC-XXX): <div style="z-index:400"><input style="margin-top: 5px; height: 20px; width: 100%; box-sizing: border-box" class="text" type="text" placeholder="Issue Number" /></div>';
+                var aElement = divElement.getElementsByTagName("INPUT")[0];
+
+                var messageBox = MarvalSoftware.UI.MessageBox.show(
+                    "Link JIRA Issue",
+                    divElement,
+                    MarvalSoftware.UI.MessageBox.Types.INFORMATION,
+                    [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
+                    MarvalSoftware.UI.MessageBox.Buttons.OK,
+                    400,
+                    MarvalSoftware.createDelegate(function (sender, e) {
+                        if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
+                            this._linkIssue(aElement.value);
+                        }
+                    }, this)
+                );
+
+                MarvalSoftware.UI.Dom.EventManager.getInstance().addHandler(aElement, "keypress", function (s, e) {
+                    if (e.keyCode == 13) {
+                        messageBox.dismiss(MarvalSoftware.UI.MessageBox.Buttons.OK);
+                    }
+                }, this);
+
+                aElement.focus();
+            },
+
+            _issuesElement_click: function (sender, e) {
+                if (e.target.className == "unlink") {
+                    this._unlinkIssue(e.target.dataset.issueNumber);
+                }
+            },
+
+            _createElement_click: function (sender, e) {
+                this._createNewIssue(this._summaryElement.value, this._typeElement.value);
+                e.preventDefault();
+            }
+        });
+    })();
+</script>

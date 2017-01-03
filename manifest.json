@@ -1,0 +1,25 @@
+﻿{
+  "Name": "MarvalSoftware.JIRA",
+  "Organisation": "Marval",
+  "DisplayName": "JIRA",
+  "Icon": "img/jira_16.png",
+  "Version": "1.0.0",
+  "SupportedVersions": [
+    "14.3.0",
+    "0.0.0"
+  ],
+  "Pages": [
+    "request.aspx"
+  ],
+  "HtmlImportFile": "MarvalSoftware.JIRA.html",
+  "TagName": "MarvalSoftware-Jira",
+  "GlobalSettings": [
+    "JIRABaseUrl",
+    "JIRAProject",
+    "JIRACustomFieldID",
+    "JIRACustomFieldName",
+    "JIRAUsername",
+    "JIRAPassword"
+  ]
+
+}
