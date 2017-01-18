@@ -3,9 +3,9 @@
   "Organisation": "Marval",
   "DisplayName": "JIRA",
   "Icon": "img/jira_16.png",
-  "Version": "1.0.0",
+  "Version": "2.0.0",
   "SupportedVersions": [
-    "14.3.0",
+    "14.4.0",
     "0.0.0"
   ],
   "Pages": [
@@ -19,7 +19,7 @@
     "JIRACustomFieldID",
     "JIRACustomFieldName",
     "JIRAUsername",
-    "JIRAPassword"
+    "JIRAPassword",
+    "JIRA_APIKey"
   ]
-
 }

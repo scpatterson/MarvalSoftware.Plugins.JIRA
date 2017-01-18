@@ -226,7 +226,7 @@
 </template>
 <script>
     (function () {
-        
+
         var MarvalSoftware = window.top.MarvalSoftware;
         var $ = window.top.$;
 
@@ -272,7 +272,7 @@
                 }
                 this._renderIssuesRequest = $.ajax({
                     type: "GET",
-                    url: this._getPluginPath() + "handler/JiraHandler.ashx?requestNumber=" + this._requestNumber,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetJiraIssues&requestNumber=" + this._requestNumber,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
@@ -288,7 +288,7 @@
             _createNewIssue: function (issueSummary, issueType) {
                 $.ajax({
                     type: "POST",
-                    url: this._getPluginPath() + "handler/JiraHandler.ashx?requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PostJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
@@ -304,7 +304,7 @@
             _unlinkIssue: function (issueNumber) {
                 $.ajax({
                     type: "DELETE",
-                    url: this._getPluginPath() + "handler/JiraHandler.ashx?issueNumber=" + issueNumber,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=UnlinkJiraIssue&issueNumber=" + issueNumber,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function () {
@@ -316,7 +316,7 @@
             _linkIssue: function (issueNumber) {
                 $.ajax({
                     type: "PUT",
-                    url: this._getPluginPath() + "handler/JiraHandler.ashx?requestNumber=" + this._requestNumber + "&issueNumber=" + issueNumber,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=LinkJiraIssue&requestNumber=" + this._requestNumber + "&issueNumber=" + issueNumber,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
@@ -410,7 +410,7 @@
             _preRequisiteCheck: function (sender, e) {
                 $.ajax({
                     type: "GET",
-                    url: this._getPluginPath() + "handler/JiraHandler.ashx?preReq=true",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PreRequisiteCheck",
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
