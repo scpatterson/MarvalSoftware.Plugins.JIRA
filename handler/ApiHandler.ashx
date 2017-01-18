@@ -107,7 +107,7 @@ public class ApiHandler : PluginHandler
         ProcessParamaters(context.Request);
 
         var action = context.Request.QueryString["action"];
-        ApiRouting(action, context);
+        RouteRequest(action, context);
     }
 
     public override bool IsReusable
@@ -129,7 +129,7 @@ public class ApiHandler : PluginHandler
     /// <summary>
     /// Route Request via Action
     /// </summary>
-    private void ApiRouting(string action, HttpContext context)
+    private void RouteRequest(string action, HttpContext context)
     {
         HttpWebRequest httpWebRequest;
 
@@ -143,15 +143,15 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "LinkJiraIssue":
-                PutJiraIssue(this.MsmRequestNo);
+                UpdateJiraIssue(this.MsmRequestNo);
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("issue/{0}", JiraIssueNo));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "UnlinkJiraIssue":
-                context.Response.Write(PutJiraIssue(null));
+                context.Response.Write(UpdateJiraIssue(null));
                 break;
-            case "PostJiraIssue":
-                dynamic result = PostJiraIssue();
+            case "CreateJiraIssue":
+                dynamic result = CreateJiraIssue();
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("issue/{0}", result.key));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
@@ -166,7 +166,7 @@ public class ApiHandler : PluginHandler
     /// <summary>
     /// Create New Jira Issue
     /// </summary>
-    private JObject PostJiraIssue()
+    private JObject CreateJiraIssue()
     {
         dynamic jobject = JObject.FromObject(new
         {
@@ -194,7 +194,7 @@ public class ApiHandler : PluginHandler
     /// </summary>
     /// <param name="value">Value to update custom field in JIRA with</param>
     /// <returns>Process Response</returns>
-    private string PutJiraIssue(int? value)
+    private string UpdateJiraIssue(int? value)
     {
         IDictionary<string, object> body = new Dictionary<string, object>();
         IDictionary<string, object> result = new Dictionary<string, object>();
