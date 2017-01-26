@@ -61,7 +61,7 @@ public class ApiHandler : PluginHandler
     {
         get
         {
-            return GlobalSettings["JIRAAPIKey"];
+            return GlobalSettings["JIRA_APIKey"];
         }
     }
 
@@ -156,7 +156,7 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "MoveStatus":
-                context.Response.Write(MoveMsmStatus(context.Request));
+                MoveMsmStatus(context.Request);
                 break;
         }
 
@@ -185,7 +185,7 @@ public class ApiHandler : PluginHandler
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
 
-        var httpWebRequest = BuildRequest(this.BaseUrl + "issue/", jobject.ToString(),"POST");
+        var httpWebRequest = BuildRequest(this.BaseUrl + "issue/", jobject.ToString(), "POST");
         return JObject.Parse(ProcessRequest(httpWebRequest, this.JiraCredentials));
     }
 
@@ -201,7 +201,7 @@ public class ApiHandler : PluginHandler
         result.Add(this.CustomFieldId, value);
         body.Add("fields", result);
 
-        var httpWebRequest = BuildRequest(this.BaseUrl + String.Format("issue/{0}", JiraIssueNo), JsonHelper.ToJSON(body),"PUT");
+        var httpWebRequest = BuildRequest(this.BaseUrl + String.Format("issue/{0}", JiraIssueNo), JsonHelper.ToJSON(body), "PUT");
         return ProcessRequest(httpWebRequest, this.JiraCredentials);
     }
 
@@ -210,19 +210,18 @@ public class ApiHandler : PluginHandler
     /// </summary>
     /// <param name="httpRequest">The HttpRequest</param>
     /// <returns>Process Response</returns>
-    private string MoveMsmStatus(HttpRequest httpRequest)
+   private void MoveMsmStatus(HttpRequest httpRequest)
     {
         int requestNumber;
         var isValid = StatusValidation(httpRequest, out requestNumber);
 
         if (isValid)
         {
-
             HttpWebRequest httpWebRequest;
-            httpWebRequest = BuildRequest(this.MSMBaseUrl +  String.Format("/api/requests?number={0}", requestNumber));
-            var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.APIKey)));
-            httpWebRequest = BuildRequest(this.MSMBaseUrl +  String.Format("/api/status?name={0}", httpRequest.QueryString["status"]));
-            var statusResponse =  JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.APIKey)));
+            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests?number={0}", requestNumber));
+            var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
+            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/status?name={0}", httpRequest.QueryString["status"]));
+            var statusResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
 
             dynamic msmPutRequest = new ExpandoObject();
             msmPutRequest.id = (int)requestResponse["items"].First["id"];
@@ -230,13 +229,31 @@ public class ApiHandler : PluginHandler
             msmPutRequest.updatedOn = (DateTime)requestResponse["items"].First["updatedOn"];
 
             httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/status", msmPutRequest.id), JsonHelper.ToJSON(msmPutRequest), "PUT");
-            return ProcessRequest(httpWebRequest, GetEncodedCredentials(this.APIKey));
+
+            var response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
+            if (response.Contains("404"))
+            {
+                AddMsmNote(requestNumber,  "JIRA status update failed: "  + httpRequest.QueryString["status"] + " is not a valid next state");
+            }
         }
         else
         {
-            return "Invalid Status";
+            AddMsmNote(requestNumber,  "JIRA status update failed: all linked JIRA issues must be in the same status");
         }
+    }
 
+    /// <summary>
+    /// Add MSM Note
+    /// </summary>   
+    private void AddMsmNote(int requestNumber, string note)
+    {
+        IDictionary<string, object> body = new Dictionary<string, object>();
+        body.Add("id", requestNumber);
+        body.Add("note", note);
+
+        HttpWebRequest httpWebRequest;
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
+        ProcessRequest(httpWebRequest, GetEncodedCredentials(this.APIKey));
     }
 
     /// <summary>
@@ -250,7 +267,7 @@ public class ApiHandler : PluginHandler
         dynamic data = JObject.Parse(json);
         requestNumber = (int)data.issue.fields[this.CustomFieldId].Value;
 
-        if (requestNumber > 0  && httpRequest.QueryString["status"] != null)
+        if (requestNumber > 0 && httpRequest.QueryString["status"] != null)
         {
             var httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}", this.CustomFieldName, requestNumber));
             dynamic d = JObject.Parse(ProcessRequest(httpWebRequest, this.JiraCredentials));
@@ -321,7 +338,7 @@ public class ApiHandler : PluginHandler
         request.Method = method.ToUpperInvariant();
         request.ContentType = "application/json";
 
-        if (body !=null)
+        if (body != null)
         {
             using (var writer = new StreamWriter(request.GetRequestStream()))
             {
@@ -340,13 +357,21 @@ public class ApiHandler : PluginHandler
     /// <returns>Process Response</returns>
     private static string ProcessRequest(HttpWebRequest request, string credentials)
     {
-        request.Headers.Add("Authorization", "Basic " + credentials);
-
-        HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+        try
         {
-            return reader.ReadToEnd();
+            request.Headers.Add("Authorization", "Basic " + credentials);
+
+            HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+            {
+                return reader.ReadToEnd();
+            }
         }
+        catch (WebException ex)
+        {
+            return ex.Message;
+        }
+
     }
 
     /// <summary>
@@ -358,8 +383,8 @@ public class ApiHandler : PluginHandler
     {
         byte[] byteCredentials = Encoding.UTF8.GetBytes(credentials);
         return Convert.ToBase64String(byteCredentials);
-    }   
-    
+    }
+
     /// <summary>
     /// JsonHelper Functions
     /// </summary>
@@ -371,5 +396,3 @@ public class ApiHandler : PluginHandler
         }
     }
 }
-
-
