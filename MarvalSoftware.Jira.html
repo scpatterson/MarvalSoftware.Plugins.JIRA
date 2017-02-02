@@ -288,7 +288,7 @@
             _createNewIssue: function (issueSummary, issueType) {
                 $.ajax({
                     type: "POST",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PostJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {

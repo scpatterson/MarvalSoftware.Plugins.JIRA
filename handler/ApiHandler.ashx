@@ -53,11 +53,11 @@ public class ApiHandler : PluginHandler
     {
         get
         {
-            return HttpContext.Current.Request.Url.Authority + MarvalSoftware.UI.WebUI.ServiceDesk.WebHelper.ApplicationPath;
+            return HttpContext.Current.Request.Url.Scheme + "://127.0.0.1" + MarvalSoftware.UI.WebUI.ServiceDesk.WebHelper.ApplicationPath;
         }
     }
 
-    private string APIKey
+    private string MSMAPIKey
     {
         get
         {
@@ -210,35 +210,43 @@ public class ApiHandler : PluginHandler
     /// </summary>
     /// <param name="httpRequest">The HttpRequest</param>
     /// <returns>Process Response</returns>
-   private void MoveMsmStatus(HttpRequest httpRequest)
+    private void MoveMsmStatus(HttpRequest httpRequest)
     {
         int requestNumber;
         var isValid = StatusValidation(httpRequest, out requestNumber);
 
+        HttpWebRequest httpWebRequest;
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests?number={0}", requestNumber));
+        var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
+        var requestId = (int)requestResponse["items"].First["id"];
+
         if (isValid)
         {
-            HttpWebRequest httpWebRequest;
-            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests?number={0}", requestNumber));
-            var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
             httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/status?name={0}", httpRequest.QueryString["status"]));
             var statusResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
 
-            dynamic msmPutRequest = new ExpandoObject();
-            msmPutRequest.id = (int)requestResponse["items"].First["id"];
-            msmPutRequest.statusId = (int)statusResponse["items"].First["id"];
-            msmPutRequest.updatedOn = (DateTime)requestResponse["items"].First["updatedOn"];
-
-            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/status", msmPutRequest.id), JsonHelper.ToJSON(msmPutRequest), "PUT");
-
-            var response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
-            if (response.Contains("404"))
+            string response = string.Empty;
+            if ((int)statusResponse["totalItemCount"] > 0)
             {
-                AddMsmNote(requestNumber,  "JIRA status update failed: "  + httpRequest.QueryString["status"] + " is not a valid next state");
+                dynamic msmPutRequest = new ExpandoObject();
+                msmPutRequest.id = requestId;
+                msmPutRequest.statusId = (int)statusResponse["items"].First["id"];
+                msmPutRequest.updatedOn = (DateTime)requestResponse["items"].First["updatedOn"];
+
+                httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/status", msmPutRequest.id), JsonHelper.ToJSON(msmPutRequest), "PUT");
+
+                response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
             }
+
+            if (response.Contains("404") || (int)statusResponse["totalItemCount"] == 0)
+            {
+                AddMsmNote(requestId, "JIRA status update failed: " + httpRequest.QueryString["status"] + " is not a valid next state.");
+            }
+
         }
         else
         {
-            AddMsmNote(requestNumber,  "JIRA status update failed: all linked JIRA issues must be in the same status");
+            AddMsmNote(requestId,  "JIRA status update failed: all linked JIRA issues must be in the same status.");
         }
     }
 
@@ -253,7 +261,7 @@ public class ApiHandler : PluginHandler
 
         HttpWebRequest httpWebRequest;
         httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
-        ProcessRequest(httpWebRequest, GetEncodedCredentials(this.APIKey));
+        ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
     }
 
     /// <summary>
