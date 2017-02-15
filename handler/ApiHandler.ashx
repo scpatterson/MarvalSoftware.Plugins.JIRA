@@ -233,7 +233,7 @@ public class ApiHandler : PluginHandler
                 msmPutRequest.statusId = (int)statusResponse["items"].First["id"];
                 msmPutRequest.updatedOn = (DateTime)requestResponse["items"].First["updatedOn"];
 
-                httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/status", msmPutRequest.id), JsonHelper.ToJSON(msmPutRequest), "PUT");
+                httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/states", msmPutRequest.id), JsonHelper.ToJSON(msmPutRequest), "POST");
 
                 response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
             }
@@ -257,7 +257,7 @@ public class ApiHandler : PluginHandler
     {
         IDictionary<string, object> body = new Dictionary<string, object>();
         body.Add("id", requestNumber);
-        body.Add("note", note);
+        body.Add("content", note);
 
         HttpWebRequest httpWebRequest;
         httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
