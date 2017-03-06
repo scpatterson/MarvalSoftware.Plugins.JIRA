@@ -1,6 +1,6 @@
 ﻿{
-  "Name": "MarvalSoftware.JIRA",
-  "Organisation": "Marval",
+  "Name": "MarvalSoftware.Plugins.JIRA",
+  "Organisation": "MarvalSoftware",
   "DisplayName": "JIRA",
   "Icon": "img/jira_16.png",
   "Version": "2.0.0",
@@ -11,8 +11,8 @@
   "Pages": [
     "request.aspx"
   ],
-  "HtmlImportFile": "MarvalSoftware.JIRA.html",
-  "TagName": "MarvalSoftware-Jira",
+  "HtmlImportFile": "MarvalSoftware.Plugins.JIRA.html",
+  "TagName": "marval-software-plugins-jira",
   "GlobalSettings": [
     "JIRABaseUrl",
     "JIRAProject",
