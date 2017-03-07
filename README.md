@@ -37,8 +37,8 @@ if the status is not valid a note will be added to the request.
 
 | Plugin  | MSM         | JIRA     |
 |---------|-------------|----------|
-| 1.0.0   | 14.3.0.3085 | v7+      |
-| 2.0.0   | 14.4.0.#### | v7+      |
+| 1.0.0   | 14.3.0      | v7+      |
+| 2.0.0   | 14.4.0      | v7+      |
 
 ## Installation
 
