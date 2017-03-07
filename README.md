@@ -52,7 +52,7 @@ Once the plugin has been installed you will need to configure the following sett
 + *JIRA Custom Field Name* : The name of the custom field within JIRA that contains the MSM request number. `MSM Request Number`
 + *JIRA Username* : The username for authentication with JIRA.
 + *JIRA Password* : The password for authentication with JIRA.
-+ *MSM API Key* : The Api key for the user created within MSM to perfom these actions.
++ *MSM API Key* : The API key for the user created within MSM to perfom these actions.
 
 We recommend that you create a new user within JIRA instead of re-using an existing account. This will allow you to revoke access should you want to, we also suggest creating a new user within MSM. 
 
