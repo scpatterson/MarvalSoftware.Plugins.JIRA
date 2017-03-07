@@ -20,6 +20,6 @@
     "JIRACustomFieldName",
     "JIRAUsername",
     "JIRAPassword",
-    "JIRA_APIKey"
+    "MSMAPIKey"
   ]
 }

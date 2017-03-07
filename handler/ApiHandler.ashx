@@ -61,7 +61,7 @@ public class ApiHandler : PluginHandler
     {
         get
         {
-            return GlobalSettings["JIRA_APIKey"];
+            return GlobalSettings["MSMAPIKey"];
         }
     }
 
