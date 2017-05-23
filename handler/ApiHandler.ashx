@@ -216,24 +216,23 @@ public class ApiHandler : PluginHandler
         var isValid = StatusValidation(httpRequest, out requestNumber);
 
         HttpWebRequest httpWebRequest;
-        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests?number={0}", requestNumber));
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests?number={0}", requestNumber));
         var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
         var requestId = (int)requestResponse["items"].First["id"];
 
         if (isValid)
         {
-            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/status?name={0}", httpRequest.QueryString["status"]));
+            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/administration/states?name={0}", httpRequest.QueryString["status"]));
             var statusResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
 
             string response = string.Empty;
             if ((int)statusResponse["totalItemCount"] > 0)
             {
                 dynamic msmPutRequest = new ExpandoObject();
-                msmPutRequest.id = requestId;
                 msmPutRequest.statusId = (int)statusResponse["items"].First["id"];
                 msmPutRequest.updatedOn = (DateTime)requestResponse["items"].First["updatedOn"];
 
-                httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/states", msmPutRequest.id), JsonHelper.ToJSON(msmPutRequest), "POST");
+                httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/states", requestId), JsonHelper.ToJSON(msmPutRequest), "POST");
 
                 response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
             }
