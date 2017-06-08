@@ -229,8 +229,8 @@ public class ApiHandler : PluginHandler
             if ((int)statusResponse["totalItemCount"] > 0)
             {
                 dynamic msmPutRequest = new ExpandoObject();
-                msmPutRequest.statusId = (int)statusResponse["items"].First["id"];
-                msmPutRequest.updatedOn = (DateTime)requestResponse["items"].First["updatedOn"];
+                msmPutRequest.statusId = (int)statusResponse["items"]["entity"]["data"].First["id"];
+                msmPutRequest.updatedOn = (DateTime)requestResponse["items"]["entity"]["data"].First["updatedOn"];
 
                 httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/states", requestId), JsonHelper.ToJSON(msmPutRequest), "POST");
 
