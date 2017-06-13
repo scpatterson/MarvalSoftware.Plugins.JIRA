@@ -158,6 +158,10 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
+            case "PopulateIssueTypes":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("issuetype"));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
         }
 
 
