@@ -1,5 +1,5 @@
 ﻿<script type="text/javascript" src="template.js"></script>
-<template class="mainTemplate">
+<template>
     <style>
         .MarvalSoftware-Jira {
             display: none;
@@ -171,8 +171,10 @@
         </div>
         <div class="newIssue">
             <h1>New Issue</h1>
-            <select class="IssueTypeSelect">
-
+            <select>
+                <option value="Story">Story</option>
+                <option value="Task">Task</option>
+                <option value="Bug">Bug</option>
             </select>
             <div>
                 <input type="text" placeholder="Summary" class="text" maxlength="255" />
@@ -232,6 +234,7 @@
         {
             _pluginPath: null,
             _requestNumber: null,
+            _issueDescription: null,
             _element: null,
             _issuesElement: null,
             _typeElement: null,
@@ -241,10 +244,11 @@
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
+                this._issueDescription = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getDescription();
+
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
-                this._populateIssueTypes(); 
             },
 
             _renderIssue: function (issue) {
@@ -336,31 +340,10 @@
                 this._summaryElement = this._element.querySelector("input");
                 this._createElement = this._element.querySelector("button");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
+                eventManager.addHandler(this._summaryElement, "input", function () {
+                    this._createElement.disabled = false;
+                }, this);
                 this.appendChild(this._element);
-            },
-
-            _populateIssueTypes: function () {
-                $.ajax({
-                    type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PopulateIssueTypes",
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    success: function (result) {
-                        var select = document.querySelector(".mainTemplate").content.querySelector(".MarvalSoftware-Jira .IssueTypeSelect");
-         
-                        for (var i = 0; i < result.length; i++) {
-                            if (!result[i].subtask && result[i].name !== "Epic") {
-                                var option = document.createElement("option");
-                                option.text = result[i].name;
-                                select.add(option);
-                            }
-                        }
-     
-                    }.bind(this),
-                    error: function (error) {
-                        console.log(error);
-                    }.bind(this)
-                });
             },
 
             _popup: function () {
@@ -381,8 +364,15 @@
                 }
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
-                }           
-                this._pluginWindow.show();         
+                }
+
+                this._summaryElement.value = this._issueDescription;
+                if (this._summaryElement.value.length === 0) {
+                    this._createElement.disabled = true;
+                }
+
+                this._pluginWindow.show();
+               
             },
 
             _errorPopup: function (result) {
@@ -483,7 +473,7 @@
 
             _createElement_click: function (sender, e) {
                 this._createNewIssue(this._summaryElement.value, this._typeElement.value);
-                e.preventDefault();          
+                e.preventDefault();
             }
         });
     })();
