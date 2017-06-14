@@ -95,6 +95,8 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
+    private string JiraProject { get; set; }
+
     //fields
     private int MsmRequestNo;
 
@@ -124,6 +126,7 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
+        JiraProject = httpRequest.Params["project"] ?? string.Empty;
     }
 
     /// <summary>
@@ -139,7 +142,7 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(PreRequisiteCheck());
                 break;
             case "GetJiraIssues":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}", this.CustomFieldName, this.MsmRequestNo));
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1} and project={2}", this.CustomFieldName, this.MsmRequestNo, ProjectName));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "LinkJiraIssue":
@@ -158,13 +161,22 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
+            case "LoadJiraProjectNames":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
+            case "ChangeJiraProject":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql=project={0} and '{1}'={2}", JiraProject, this.CustomFieldName, this.MsmRequestNo));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
             case "PopulateIssueTypes":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("issuetype"));
+                if (JiraProject.Equals("")) {
+                    JiraProject = ProjectName;
+                }
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project/{0}", JiraProject));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
         }
-
-
     }
 
     /// <summary>
@@ -178,7 +190,7 @@ public class ApiHandler : PluginHandler
             {
                 project = new
                 {
-                    key = this.ProjectName
+                    key = this.JiraProject
                 },
                 summary = this.JiraSummary,
                 issuetype = new

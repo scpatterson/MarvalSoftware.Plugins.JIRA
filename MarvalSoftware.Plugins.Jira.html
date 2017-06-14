@@ -21,9 +21,23 @@
                 color: #3B73AF;
             }
 
+            .MarvalSoftware-Jira > .projects {
+                position: absolute;
+                left: 10px;
+                right: 10px;
+                top: 10px;
+            }
+
+                .MarvalSoftware-Jira > .projects > .projectLoading {
+                    background-repeat: no-repeat;
+                    float: left;
+                    width: 20px;
+                    height: 20px;
+                }
+
             .MarvalSoftware-Jira > .header {
                 position: absolute;
-                top: 10px;
+                top: 48px;
                 left: 10px;
                 right: 10px;
                 line-height: 30px;
@@ -39,7 +53,7 @@
 
             .MarvalSoftware-Jira > .issues {
                 position: absolute;
-                top: 50px;
+                top: 80px;
                 bottom: 82px;
                 left: 10px;
                 right: 10px;
@@ -163,6 +177,12 @@
                 }
     </style>
     <div class="MarvalSoftware-Jira">
+        <div class="projects">
+            <h1>Project:&nbsp;</h1>
+            <div class="projectLoading">
+                <select class="projectSelect"></select>
+            </div>
+        </div>
         <div class="header">
             <h1>Linked Issues</h1>
             <a href="javascript:void(0);">Link</a>
@@ -172,7 +192,6 @@
         <div class="newIssue">
             <h1>New Issue</h1>
             <select class="IssueTypeSelect">
-
             </select>
             <div>
                 <input type="text" placeholder="Summary" class="text" maxlength="255" />
@@ -237,14 +256,15 @@
             _typeElement: null,
             _summaryElement: null,
             _createElement: null,
+            _projectSelectElement: null,
             _renderIssuesRequest: null,
+            _projectLoadingElement: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
-                this._populateIssueTypes(); 
             },
 
             _renderIssue: function (issue) {
@@ -263,12 +283,13 @@
                     this._issuesElement.appendChild(issueElement);
                 }
             },
-
+            
             _renderIssues: function () {
                 if (this._renderIssuesRequest) {
                     this._renderIssuesRequest.abort();
                     this._renderIssuesRequest = null;
                 }
+
                 this._renderIssuesRequest = $.ajax({
                     type: "GET",
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetJiraIssues&requestNumber=" + this._requestNumber,
@@ -285,9 +306,10 @@
             },
 
             _createNewIssue: function (issueSummary, issueType) {
+                var selectedProject = this._projectSelectElement.options[this._projectSelectElement.selectedIndex].value;
                 $.ajax({
                     type: "POST",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType + "&project=" + selectedProject,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
@@ -332,30 +354,92 @@
                 this._issuesElement = this._element.querySelector(".issues");
                 this._issuesElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
-                this._typeElement = this._element.querySelector("select");
+                this._typeElement = this._element.querySelector(".newIssue > select");
                 this._summaryElement = this._element.querySelector("input");
                 this._createElement = this._element.querySelector("button");
+                this._projectSelectElement = this._element.querySelector(".MarvalSoftware-Jira > .projects > .projectLoading > select");
+                this._projectLoadingElement = this._element.querySelector(".MarvalSoftware-Jira > .projects > .projectLoading");
+                this._projectLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
+                eventManager.addHandler(this._projectSelectElement, "change", this._changeProject, this);    
+                eventManager.addHandler(this._projectSelectElement, "change", this._populateIssueTypes, this);    
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
+                this._projectSelectElement.style.display = 'none';
                 this.appendChild(this._element);
             },
 
-            _populateIssueTypes: function () {
+            _loadJiraProjectNames: function () {
                 $.ajax({
                     type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PopulateIssueTypes",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=LoadJiraProjectNames",
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
-                        var select = document.querySelector(".mainTemplate").content.querySelector(".MarvalSoftware-Jira .IssueTypeSelect");
-         
+                        this._projectLoadingElement.style.backgroundImage = "";
+                        this._projectSelectElement.style.display = 'block';
                         for (var i = 0; i < result.length; i++) {
-                            if (!result[i].subtask && result[i].name !== "Epic") {
+                            var option = document.createElement("option");
+                            option.text = result[i].key;
+                            this._projectSelectElement.add(option);
+                        }
+                        
+
+                    }.bind(this),
+                    error: function (error) {
+                        console.log(error);
+                    }.bind(this)
+                });
+            },
+
+            _clearIssues: function () {
+                while (this._issuesElement.firstChild) {
+                    this._issuesElement.removeChild(this._issuesElement.firstChild);
+                }
+            },
+
+            _changeProject: function (e) {
+                var selectedProject = e.options[e.selectedIndex].value;
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=ChangeJiraProject&project="+ selectedProject + "&requestNumber=" + this._requestNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._clearIssues();
+                        this._issuesElement.style.backgroundImage = "";
+                        result.issues.forEach(this._renderIssue.bind(this));
+                    }.bind(this),
+                    error: function (error) {
+                        console.log(error);
+                    }.bind(this)
+                });
+            },
+
+            _clearIssueTypes: function () {
+                while (this._typeElement.firstChild) {
+                    this._typeElement.removeChild(this._typeElement.firstChild);
+                }
+            },
+
+            _populateIssueTypes: function (event) {
+                var selectedProject = "";
+                if (event != null) {
+                    selectedProject = event.options[event.selectedIndex].value;
+                }
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PopulateIssueTypes&project=" + selectedProject,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._clearIssueTypes();
+                        var projectIssueTypes = result.issueTypes;
+                        for (var i = 0; i < projectIssueTypes.length; i++) {
+                            if (!projectIssueTypes[i].subtask && projectIssueTypes[i].name !== "Epic") {
                                 var option = document.createElement("option");
-                                option.text = result[i].name;
-                                select.add(option);
+                                option.text = projectIssueTypes[i].name;
+                                this._typeElement.add(option);
                             }
                         }
-     
                     }.bind(this),
                     error: function (error) {
                         console.log(error);
@@ -377,12 +461,15 @@
                         bodyElement: this
                     });
                     this._renderElement();
+                    this._loadJiraProjectNames();
+                    this._populateIssueTypes();
                     this._renderIssues();
                 }
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
-                }           
-                this._pluginWindow.show();         
+                }
+                
+                this._pluginWindow.show();
             },
 
             _errorPopup: function (result) {
@@ -483,7 +570,7 @@
 
             _createElement_click: function (sender, e) {
                 this._createNewIssue(this._summaryElement.value, this._typeElement.value);
-                e.preventDefault();          
+                e.preventDefault();
             }
         });
     })();
