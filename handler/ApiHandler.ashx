@@ -97,6 +97,8 @@ public class ApiHandler : PluginHandler
 
     private string JiraProject { get; set; }
 
+    private string JiraProjectList { get; set; }
+
     //fields
     private int MsmRequestNo;
 
@@ -127,6 +129,7 @@ public class ApiHandler : PluginHandler
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
         JiraProject = httpRequest.Params["project"] ?? string.Empty;
+        JiraProjectList = httpRequest.Params["projectList"] ?? string.Empty;
     }
 
     /// <summary>
@@ -142,7 +145,7 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(PreRequisiteCheck());
                 break;
             case "GetJiraIssues":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1} and project={2}", this.CustomFieldName, this.MsmRequestNo, ProjectName));
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1} and project={2}&maxResults=500", this.CustomFieldName, this.MsmRequestNo, ProjectName));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "LinkJiraIssue":
@@ -161,12 +164,8 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-            case "LoadJiraProjectNames":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
-                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
-                break;
             case "ChangeJiraProject":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql=project={0} and '{1}'={2}", JiraProject, this.CustomFieldName, this.MsmRequestNo));
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql=project={0} and '{1}'={2}&maxResults=500", JiraProject, this.CustomFieldName, this.MsmRequestNo));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "PopulateIssueTypes":
@@ -176,6 +175,15 @@ public class ApiHandler : PluginHandler
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project/{0}", JiraProject));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
+            case "GetAllIssues":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}&maxResults=500", this.CustomFieldName, this.MsmRequestNo));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
+            case "FetchJiraProjectNames":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
+
         }
     }
 
