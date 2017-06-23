@@ -240,23 +240,22 @@
             _summaryElement: null,
             _createElement: null,
             _renderIssuesRequest: null,
-            _contact: null,
+            _contactSearcher: null,
             _contactEmail: null,
+            _contactUsername: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
-                this._contact = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getContact();
+                this._contactSearcher = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getContact();
 
-                if (this._contact._contactCommunicationDetails != null) {
-                    this._contactEmail = this._contact._contactCommunicationDetails.PreferredNotificationAddress;
-                }
-
-                if (this._contactEmail != null) {
-                    console.log(this._contactEmail);
+                if (this._contactSearcher._contactCommunicationDetails != null) {
+                    this._contactEmail = this._contactSearcher._contactCommunicationDetails.PreferredNotificationAddress;
                 }
 
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
+                    //Checks if the current contact is a Jira user.
+                    this._getContactUsername();
                 }
             },
 
@@ -297,10 +296,32 @@
                 });
             },
 
+            _getContactUsername: function () {
+                if (this._contactEmail != null) {
+                    $.ajax({
+                        type: "GET",
+                        url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetJiraUsers",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (result) {
+                            for (var i = 0; i < result.length; i++) {
+                                if (result[i]["emailAddress"] === this._contactEmail) {
+                                    this._contactUsername = result[i]["name"];
+                                    return;
+                                }
+                            }
+                        }.bind(this),
+                        error: function () {
+                            this._errorPopup();
+                        }.bind(this)
+                    });
+                }
+            },
+
             _createNewIssue: function (issueSummary, issueType) {
                 $.ajax({
                     type: "POST",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType + "&reporter=" + this._contactUsername,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
