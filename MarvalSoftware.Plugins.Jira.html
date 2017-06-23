@@ -240,9 +240,21 @@
             _summaryElement: null,
             _createElement: null,
             _renderIssuesRequest: null,
+            _contact: null,
+            _contactEmail: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
+                this._contact = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getContact();
+
+                if (this._contact._contactCommunicationDetails != null) {
+                    this._contactEmail = this._contact._contactCommunicationDetails.PreferredNotificationAddress;
+                }
+
+                if (this._contactEmail != null) {
+                    console.log(this._contactEmail);
+                }
+
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
