@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using MarvalSoftware.UI.WebUI.ServiceDesk.RFP.Plugins;
+using MarvalSoftware.ServiceDesk.Facade;
 
 /// <summary>
 /// ApiHandler
@@ -158,11 +159,55 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
+            case "AddAttachment":
+                AddAttachment();
+                break;
+
+        }
+    }
+    public void AddAttachment() {
+        var facade = new RequestManagementFacade();
+        var info = facade.ViewAnAttachment(1);
+        string result = System.Text.Encoding.UTF8.GetString(info.Content);
+
+        var boundary = string.Format("----------{0:N}", Guid.NewGuid());
+        var content = new MemoryStream();
+        var writer = new StreamWriter(content);
+        var data = info.Content;
+
+        writer.WriteLine("--{0}", boundary);
+        writer.WriteLine("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\"", info.Name);
+        writer.WriteLine("Content-Type: " + info.ContentType);
+        writer.WriteLine();
+        writer.Flush();
+        content.Write(data, 0, data.Length);
+        writer.WriteLine();
+        writer.WriteLine("--" + boundary + "--");
+        writer.Flush();
+        content.Seek(0, SeekOrigin.Begin);
+
+        HttpWebResponse response = null;
+        HttpWebRequest request = WebRequest.Create(new UriBuilder("http://jira-test:8080/rest/api/2/issue/TEST-364/attachments").Uri) as HttpWebRequest;
+        request.Method = "POST";
+        request.ContentType = string.Format("multipart/form-data; boundary={0}", boundary);
+        request.Headers.Add("Authorization", "Basic " + this.JiraCredentials);
+        request.Headers.Add("X-Atlassian-Token", "nocheck");
+        request.KeepAlive = true;
+        request.ContentLength = content.Length;
+
+        using (Stream requestStream = request.GetRequestStream())
+        {
+            content.CopyTo(requestStream);
         }
 
-
+        using (response = request.GetResponse() as HttpWebResponse)
+        {
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                var foo = response.StatusCode;
+            }
+        }
     }
-
     /// <summary>
     /// Create New Jira Issue
     /// </summary>
@@ -180,7 +225,7 @@ public class ApiHandler : PluginHandler
                 issuetype = new
                 {
                     name = this.JiraType
-                }
+                },
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
