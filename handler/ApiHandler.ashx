@@ -89,11 +89,21 @@ public class ApiHandler : PluginHandler
         }
     }
 
+    private string DefaultIssuePriority
+    {
+        get
+        {
+            return "3";
+        }
+    }
+
     private string JiraIssueNo { get; set; }
 
     private string JiraSummary { get; set; }
 
     private string JiraType { get; set; }
+
+    private string JiraPriority { get; set; }
 
     //fields
     private int MsmRequestNo;
@@ -124,6 +134,7 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
+        JiraPriority = httpRequest.Params["issuePriority"] ?? string.Empty;
     }
 
     /// <summary>
@@ -180,6 +191,10 @@ public class ApiHandler : PluginHandler
                 issuetype = new
                 {
                     name = this.JiraType
+                },
+                priority = new
+                {
+                    id = JiraPriority ?? DefaultIssuePriority
                 }
             }
         });

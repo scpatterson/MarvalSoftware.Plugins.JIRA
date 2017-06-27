@@ -286,9 +286,10 @@
             },
 
             _createNewIssue: function (issueSummary, issueType) {
+                var requestPriority = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestPriority();
                 $.ajax({
                     type: "POST",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType + "&issuePriority=" + requestPriority,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
