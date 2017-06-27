@@ -40,7 +40,7 @@
             .MarvalSoftware-Jira > .issues {
                 position: absolute;
                 top: 50px;
-                bottom: 120px;
+                bottom: 82px;
                 left: 10px;
                 right: 10px;
                 overflow: auto;
@@ -116,7 +116,7 @@
                 bottom: 10px;
                 left: 10px;
                 right: 10px;
-                height: 100px;
+                height: 62px;
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
@@ -165,22 +165,11 @@
                     bottom: 10px;
                 }
 
-                .MarvalSoftware-Jira > .newIssue > .addAttachments {
-                    position: absolute;
-                    left: 0px;
-                    border: 1px solid #CCC;
-                    border-radius: 2px;
-                    background: #F5F5F5;
-                    height: 22px;
-                    width: 130px;
-                    padding: 2px;
-                    box-sizing: border-box;
-                }
         .attachmentHeader {
             font-size: 16px;
         }
         .checkboxes {
-            height: 300px;
+            height: 200px;
             overflow: auto;
             padding-top: 10px;
         }
@@ -209,7 +198,6 @@
                 <input type="text" placeholder="Summary" class="text" maxlength="255" />
             </div>
             <button class="createButton">Create</button>
-            <button class="addAttachments">Select Attachments</button>
         </div>
     </div>
 </template>
@@ -255,7 +243,7 @@
     </div>
 </template>
 <template class="attachmentPopupTemplate">
-    <p class="attachmentHeader">Select Attachments</p>
+    <p class="attachmentHeader">Select Request Attachment(s)</p>
     <div class="checkboxes">
     </div>
 </template>
@@ -281,12 +269,10 @@
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
                 this._attachments = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getAttachments()._attachments;
-                console.log(this._attachments);
                 this._selectedAttachmentIds = [];
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
-                //this._loadAttachmentList();
             },
 
             _renderIssue: function (issue) {
@@ -326,15 +312,19 @@
                 });
             },
 
-            _createNewIssue: function (issueSummary, issueType) {
+            _createNewIssue: function (issueSummary, issueType, attachmentIds) {
                 $.ajax({
                     type: "POST",
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
+                        console.log(result);
                         this._renderIssue(result);
                         this._summaryElement.value = "";
+                        if (attachmentIds.length != 0) {
+                            this._appendAttachments(attachmentIds, result.key);
+                        }
                     }.bind(this),
                     error: function () {
                         this._errorPopup();
@@ -377,11 +367,7 @@
                 this._typeElement = this._element.querySelector("select");
                 this._summaryElement = this._element.querySelector("input");
                 this._createElement = this._element.querySelector(".createButton");
-                eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
-
-                var attachments = this._element.querySelector(".addAttachments");
-                eventManager.addHandler(attachments, "click", this._showAttachmentsPopup, this);
-
+                eventManager.addHandler(this._createElement, "click", this._showAttachmentsPopup, this);
                 this.appendChild(this._element);
             },
 
@@ -403,12 +389,13 @@
                 }
             },
 
-            _testAttachments: function (attachmentIds) {
+            _appendAttachments: function (attachmentIds, issueNumber) {
                 $.ajax({
                     type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(','),
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(',') + "&issueNumber=" + issueNumber,
                     contentType: "text/html",
-                    success: function () {
+                    success: function (response) {
+                        console.log("Attachment Status: " + response);
                     }.bind(this),
                     error: function () {
                         this._errorPopup();
@@ -421,11 +408,9 @@
                 var template = document.querySelector('.attachmentPopupTemplate').content;
                 var templateElement = window.top.document.importNode(template, true);
                 var checkboxDiv = templateElement.querySelector(".checkboxes");
-
                 this._renderAttachments(checkboxDiv);
-
                 var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
-                    "Jira Attachments",
+                    "New Jira Issue",
                     templateElement,
                     MarvalSoftware.UI.MessageBox.INFORMATION,
                     [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
@@ -439,9 +424,8 @@
                                     this._selectedAttachmentIds.push(parseInt(checkbox.value));
                                 }
                             }
+                            this._createNewIssue(this._summaryElement.value, this._typeElement.value, this._selectedAttachmentIds);
                         }
-                        console.log(this._selectedAttachmentIds);
-                        this._testAttachments(this._selectedAttachmentIds);
                     }, this)
                 );
             },

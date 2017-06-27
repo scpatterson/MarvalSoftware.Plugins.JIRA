@@ -126,7 +126,6 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
-        var attachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
         AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
     }
 
@@ -165,17 +164,32 @@ public class ApiHandler : PluginHandler
             case "SendAttachments":
                 if (!String.IsNullOrEmpty(AttachmentIds))
                 {
-                    string[] ids = AttachmentIds.Split(',');
-                    int[] numIds = new int[ids.Length];
-                    for (int i = 0; i < ids.Length; i++)
-                    {
-                        numIds[i] = int.Parse(ids[i]);
-                    }
-                    List<AttachmentViewInfo> att = GetAttachDTOs(numIds);
-                    PostAttachments(att);
+                    int[] attachmentNumIds = CommaSeperatedToInt(AttachmentIds);
+                    List<AttachmentViewInfo> att = GetAttachDTOs(attachmentNumIds);
+                    string attachmentResult = PostAttachments(att, JiraIssueNo);
+                    context.Response.Write(attachmentResult);
                 }
                 break;
         }
+    }
+    public int[] CommaSeperatedToInt(string target) {
+        int[] numbers = null;
+        if (!String.IsNullOrEmpty(target)) {
+            numbers = new int[target.Split(',').Length];
+            string[] items = target.Split(',');
+            try
+            {
+                for (int i = 0; i < items.Length; i++)
+                {
+                    numbers[i] = int.Parse(items[i]);
+                }
+            }
+            catch (FormatException e)
+            {
+                return null;
+            }
+        }
+        return numbers;
     }
     public List<AttachmentViewInfo> GetAttachDTOs(int[] attachmentIds) {
         List<AttachmentViewInfo> attachments = new List<AttachmentViewInfo>();
@@ -186,11 +200,17 @@ public class ApiHandler : PluginHandler
         }
         return attachments;
     }
-
-    public void PostAttachments(List<AttachmentViewInfo> attachments) {
+    /// <summary>
+    /// Link attachments to specified Jira issue.
+    /// </summary>
+    /// <param name="attachments"></param>
+    /// <param name="issueKey"></param>
+    /// <returns></returns>
+    public string PostAttachments(List<AttachmentViewInfo> attachments, string issueKey) {
         var boundary = string.Format("----------{0:N}", Guid.NewGuid());
         var content = new MemoryStream();
         var writer = new StreamWriter(content);
+        var result = HttpStatusCode.OK.ToString();
 
         foreach (var attachment in attachments) {
             var data = attachment.Content;
@@ -207,7 +227,7 @@ public class ApiHandler : PluginHandler
         content.Seek(0, SeekOrigin.Begin);
 
         HttpWebResponse response = null;
-        HttpWebRequest request = WebRequest.Create(new UriBuilder("http://jira-test:8080/rest/api/2/issue/TEST-364/attachments").Uri) as HttpWebRequest;
+        HttpWebRequest request = WebRequest.Create(new UriBuilder(this.BaseUrl + "issue/" + issueKey + "/attachments").Uri) as HttpWebRequest;
         request.Method = "POST";
         request.ContentType = string.Format("multipart/form-data; boundary={0}", boundary);
         request.Headers.Add("Authorization", "Basic " + this.JiraCredentials);
@@ -224,9 +244,10 @@ public class ApiHandler : PluginHandler
         {
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                var foo = response.StatusCode;
+                result = response.StatusCode.ToString();
             }
         }
+        return result;
     }
     /// <summary>
     /// Create New Jira Issue
