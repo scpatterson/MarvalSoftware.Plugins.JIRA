@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using MarvalSoftware.UI.WebUI.ServiceDesk.RFP.Plugins;
 using MarvalSoftware.ServiceDesk.Facade;
-
+using MarvalSoftware.DataTransferObjects;
 /// <summary>
 /// ApiHandler
 /// </summary>
@@ -96,9 +96,10 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
+    private string AttachmentIds { get; set; }
+
     //fields
     private int MsmRequestNo;
-
 
     /// <summary>
     /// Handle Request
@@ -125,6 +126,8 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
+        var attachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
+        AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
     }
 
     /// <summary>
@@ -159,29 +162,46 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-            case "AddAttachment":
-                AddAttachment();
+            case "SendAttachments":
+                if (!String.IsNullOrEmpty(AttachmentIds))
+                {
+                    string[] ids = AttachmentIds.Split(',');
+                    int[] numIds = new int[ids.Length];
+                    for (int i = 0; i < ids.Length; i++)
+                    {
+                        numIds[i] = int.Parse(ids[i]);
+                    }
+                    List<AttachmentViewInfo> att = GetAttachDTOs(numIds);
+                    PostAttachments(att);
+                }
                 break;
-
         }
     }
-    public void AddAttachment() {
-        var facade = new RequestManagementFacade();
-        var info = facade.ViewAnAttachment(1);
-        string result = System.Text.Encoding.UTF8.GetString(info.Content);
+    public List<AttachmentViewInfo> GetAttachDTOs(int[] attachmentIds) {
+        List<AttachmentViewInfo> attachments = new List<AttachmentViewInfo>();
+        var attachmentFacade = new RequestManagementFacade();
+        for (int i = 0; i < attachmentIds.Length; i++)
+        {
+            attachments.Add(attachmentFacade.ViewAnAttachment(attachmentIds[i]));
+        }
+        return attachments;
+    }
 
+    public void PostAttachments(List<AttachmentViewInfo> attachments) {
         var boundary = string.Format("----------{0:N}", Guid.NewGuid());
         var content = new MemoryStream();
         var writer = new StreamWriter(content);
-        var data = info.Content;
 
-        writer.WriteLine("--{0}", boundary);
-        writer.WriteLine("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\"", info.Name);
-        writer.WriteLine("Content-Type: " + info.ContentType);
-        writer.WriteLine();
-        writer.Flush();
-        content.Write(data, 0, data.Length);
-        writer.WriteLine();
+        foreach (var attachment in attachments) {
+            var data = attachment.Content;
+            writer.WriteLine("--{0}", boundary);
+            writer.WriteLine("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\"", attachment.Name);
+            writer.WriteLine("Content-Type: " + attachment.ContentType);
+            writer.WriteLine();
+            writer.Flush();
+            content.Write(data, 0, data.Length);
+            writer.WriteLine();
+        }
         writer.WriteLine("--" + boundary + "--");
         writer.Flush();
         content.Seek(0, SeekOrigin.Begin);

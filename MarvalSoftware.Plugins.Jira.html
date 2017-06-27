@@ -40,7 +40,7 @@
             .MarvalSoftware-Jira > .issues {
                 position: absolute;
                 top: 50px;
-                bottom: 82px;
+                bottom: 120px;
                 left: 10px;
                 right: 10px;
                 overflow: auto;
@@ -116,15 +116,15 @@
                 bottom: 10px;
                 left: 10px;
                 right: 10px;
-                height: 62px;
+                height: 100px;
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
-                    margin-bottom: 10px;
+                    margin-bottom: 5px;
                     line-height: 30px;
                 }
 
-                .MarvalSoftware-Jira > .newIssue > select {
+                .MarvalSoftware-Jira > .newIssue > .issueTypeSelect {
                     box-sizing: border-box;
                     position: absolute;
                     left: 0;
@@ -134,12 +134,14 @@
                     min-width: 100px;
                     width: 100px;
                     border: 1px solid #CCC;
+                    bottom: 10px;
                 }
 
                 .MarvalSoftware-Jira > .newIssue > div {
                     position: absolute;
                     left: 110px;
                     right: 90px;
+                    bottom: 10px;
                 }
 
                     .MarvalSoftware-Jira > .newIssue > div > input {
@@ -150,7 +152,7 @@
                         border: 1px solid #CCC;
                     }
 
-                .MarvalSoftware-Jira > .newIssue > button {
+                .MarvalSoftware-Jira > .newIssue > .createButton {
                     box-sizing: border-box;
                     position: absolute;
                     right: 0;
@@ -160,6 +162,33 @@
                     border: 1px solid #CCC;
                     border-radius: 2px;
                     background: #F5F5F5;
+                    bottom: 10px;
+                }
+
+                .MarvalSoftware-Jira > .newIssue > .addAttachments {
+                    position: absolute;
+                    left: 0px;
+                    border: 1px solid #CCC;
+                    border-radius: 2px;
+                    background: #F5F5F5;
+                    height: 22px;
+                    width: 130px;
+                    padding: 2px;
+                    box-sizing: border-box;
+                }
+        .attachmentHeader {
+            font-size: 16px;
+        }
+        .checkboxes {
+            height: 300px;
+            overflow: auto;
+            padding-top: 10px;
+        }
+            .checkboxes div {
+                margin-top: 10px;
+            }
+                .checkboxes div input {
+                    margin-right: 5px;                
                 }
     </style>
     <div class="MarvalSoftware-Jira">
@@ -171,7 +200,7 @@
         </div>
         <div class="newIssue">
             <h1>New Issue</h1>
-            <select>
+            <select class="issueTypeSelect">
                 <option value="Story">Story</option>
                 <option value="Task">Task</option>
                 <option value="Bug">Bug</option>
@@ -179,7 +208,8 @@
             <div>
                 <input type="text" placeholder="Summary" class="text" maxlength="255" />
             </div>
-            <button>Create</button>
+            <button class="createButton">Create</button>
+            <button class="addAttachments">Select Attachments</button>
         </div>
     </div>
 </template>
@@ -224,6 +254,11 @@
         </div>
     </div>
 </template>
+<template class="attachmentPopupTemplate">
+    <p class="attachmentHeader">Select Attachments</p>
+    <div class="checkboxes">
+    </div>
+</template>
 <script>
     (function () {
 
@@ -240,26 +275,18 @@
             _summaryElement: null,
             _createElement: null,
             _renderIssuesRequest: null,
+            _attachments: null,
+            _selectedAttachmentIds: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
+                this._attachments = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getAttachments()._attachments;
+                console.log(this._attachments);
+                this._selectedAttachmentIds = [];
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
-                this._addAttachment();
-            },
-
-            _addAttachment: function () {
-                $.ajax({
-                    type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=AddAttachment",
-                    contentType: "text/html",
-                    success: function () {
-                    }.bind(this),
-                    error: function () {
-                        this._errorPopup();
-                    }.bind(this)
-                });
+                //this._loadAttachmentList();
             },
 
             _renderIssue: function (issue) {
@@ -349,9 +376,74 @@
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
                 this._summaryElement = this._element.querySelector("input");
-                this._createElement = this._element.querySelector("button");
+                this._createElement = this._element.querySelector(".createButton");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
+
+                var attachments = this._element.querySelector(".addAttachments");
+                eventManager.addHandler(attachments, "click", this._showAttachmentsPopup, this);
+
                 this.appendChild(this._element);
+            },
+
+            _renderAttachments: function (container) {
+                for (var i = 0; i < this._attachments.length; i++) {
+                    var div = document.createElement("div");
+                    div.style.display = "block";
+                    var checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.name = "attachment";
+                    checkbox.value = this._attachments[i].Identifier;
+                    checkbox.id = this._attachments[i].Name;
+                    var checkboxLabel = document.createElement("label");
+                    checkboxLabel.htmlFor = checkbox.id;
+                    checkboxLabel.innerHTML = checkbox.id + " (<strong>Size:</strong> " + (this._attachments[i].Length / 1000) + "kb)";
+                    div.appendChild(checkbox);
+                    div.appendChild(checkboxLabel);
+                    container.appendChild(div);
+                }
+            },
+
+            _testAttachments: function (attachmentIds) {
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(','),
+                    contentType: "text/html",
+                    success: function () {
+                    }.bind(this),
+                    error: function () {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _showAttachmentsPopup: function (sender, e) {
+                e.preventDefault();
+                var template = document.querySelector('.attachmentPopupTemplate').content;
+                var templateElement = window.top.document.importNode(template, true);
+                var checkboxDiv = templateElement.querySelector(".checkboxes");
+
+                this._renderAttachments(checkboxDiv);
+
+                var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
+                    "Jira Attachments",
+                    templateElement,
+                    MarvalSoftware.UI.MessageBox.INFORMATION,
+                    [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
+                    MarvalSoftware.UI.MessageBox.Buttons.OK,
+                    400,
+                    MarvalSoftware.createDelegate(function (sender, e) {
+                        if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
+                            for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
+                                var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
+                                if (checkbox.checked) {
+                                    this._selectedAttachmentIds.push(parseInt(checkbox.value));
+                                }
+                            }
+                        }
+                        console.log(this._selectedAttachmentIds);
+                        this._testAttachments(this._selectedAttachmentIds);
+                    }, this)
+                );
             },
 
             _popup: function () {
