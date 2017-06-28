@@ -40,7 +40,7 @@
             .MarvalSoftware-Jira > .issues {
                 position: absolute;
                 top: 50px;
-                bottom: 82px;
+                bottom: 120px;
                 left: 10px;
                 right: 10px;
                 overflow: auto;
@@ -116,7 +116,7 @@
                 bottom: 10px;
                 left: 10px;
                 right: 10px;
-                height: 62px;
+                height: 100px;
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
@@ -134,20 +134,31 @@
                     min-width: 100px;
                     width: 100px;
                     border: 1px solid #CCC;
+                    bottom: 10px;
                 }
 
                 .MarvalSoftware-Jira > .newIssue > div {
                     position: absolute;
                     left: 110px;
                     right: 90px;
+                    bottom: 10px;
                 }
 
-                    .MarvalSoftware-Jira > .newIssue > div > input {
+                    .MarvalSoftware-Jira > .newIssue > div > input[type="text"] {
                         box-sizing: border-box;
                         padding: 2px;
                         height: 22px;
                         width: 100%;
                         border: 1px solid #CCC;
+                    }
+                .MarvalSoftware-Jira > .newIssue > .noteCheckboxContainer {
+                    position: absolute;
+                    bottom: 50px;
+                    left: 0px;
+                }
+
+                    .MarvalSoftware-Jira > .newIssue > .noteCheckboxContainer > label {
+                        font-size: 13px;
                     }
 
                 .MarvalSoftware-Jira > .newIssue > button {
@@ -160,6 +171,7 @@
                     border: 1px solid #CCC;
                     border-radius: 2px;
                     background: #F5F5F5;
+                    bottom: 10px;
                 }
     </style>
     <div class="MarvalSoftware-Jira">
@@ -171,6 +183,10 @@
         </div>
         <div class="newIssue">
             <h1>New Issue</h1>
+            <div class="noteCheckboxContainer">
+                <input id="includeNotesCheck" type="checkbox" name="includeNotes" />
+                <label for="includeNotesCheck">Include Notes</label>
+            </div>
             <select>
                 <option value="Story">Story</option>
                 <option value="Task">Task</option>
@@ -240,6 +256,7 @@
             _summaryElement: null,
             _createElement: null,
             _renderIssuesRequest: null,
+            _includeNotesCheck: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
@@ -286,9 +303,10 @@
             },
 
             _createNewIssue: function (issueSummary, issueType) {
+                var includeNotes = this._includeNotesCheck.checked ? "true" : "";
                 $.ajax({
                     type: "POST",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType + "&includeNotes=" + includeNotes,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
@@ -334,7 +352,8 @@
                 this._issuesElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
-                this._summaryElement = this._element.querySelector("input");
+                this._summaryElement = this._element.querySelector("input[type='text']");
+                this._includeNotesCheck = this._element.querySelector("input[type='checkbox']");
                 this._createElement = this._element.querySelector("button");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 this.appendChild(this._element);

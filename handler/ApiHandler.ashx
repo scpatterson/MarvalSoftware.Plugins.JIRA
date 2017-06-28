@@ -95,6 +95,8 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
+    private string IncludeNotes { get; set; }
+
     //fields
     private int MsmRequestNo;
 
@@ -124,6 +126,7 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
+        IncludeNotes = httpRequest.Params["includeNotes"] ?? string.Empty;
     }
 
     /// <summary>
@@ -159,15 +162,18 @@ public class ApiHandler : PluginHandler
                 MoveMsmStatus(context.Request);
                 break;
         }
-
-
     }
-
+    public string getRequestNotes() {
+        HttpWebRequest request = BuildRequest("http://127.0.0.1/MSM" + String.Format("/api/serviceDesk/operational/requests/{0}/notes", MsmRequestNo));
+        string reponse = ProcessRequest(request, GetEncodedCredentials(this.MSMAPIKey));
+        return reponse;
+    }
     /// <summary>
     /// Create New Jira Issue
     /// </summary>
     private JObject CreateJiraIssue()
     {
+
         dynamic jobject = JObject.FromObject(new
         {
             fields = new
@@ -183,6 +189,17 @@ public class ApiHandler : PluginHandler
                 }
             }
         });
+        if (!String.IsNullOrEmpty(IncludeNotes)) {
+            string requestNotes = getRequestNotes();
+            JObject obj = JObject.Parse(requestNotes);
+
+            string descriptionString = "";
+            foreach (var note in obj["items"]) {
+                descriptionString += "MSM Note " + note["id"] + " (" + note["author"]["name"] + ")"  + " - " + note["contentSummary"] + " \n";
+            }
+            jobject.fields.description = descriptionString;
+        }
+
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
 
         var httpWebRequest = BuildRequest(this.BaseUrl + "issue/", jobject.ToString(), "POST");
