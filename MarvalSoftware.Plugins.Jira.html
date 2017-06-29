@@ -468,7 +468,7 @@
                         }
                     }.bind(this),
                     error: function (error) {
-                        console.log(error);
+                        this._errorPopup();
                     }.bind(this)
                 });
             },
@@ -494,7 +494,6 @@
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
                 }
-                
                 this._pluginWindow.show();
             },
 
