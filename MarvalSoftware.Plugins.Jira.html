@@ -247,14 +247,11 @@
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
                 this._contactSearcher = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getContact();
-
                 if (this._contactSearcher._contactCommunicationDetails != null) {
                     this._contactEmail = this._contactSearcher._contactCommunicationDetails.PreferredNotificationAddress;
                 }
-
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
-                    //Checks if the current contact is a Jira user.
                     this._getContactUsername();
                 }
             },
