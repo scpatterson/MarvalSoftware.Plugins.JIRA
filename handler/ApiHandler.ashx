@@ -160,14 +160,11 @@ public class ApiHandler : PluginHandler
                 break;
             case "AddNote":
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql=id={0}", context.Request.QueryString["issue"]));
-
                 string webhookJson = new StreamReader(context.Request.InputStream).ReadToEnd();
                 dynamic webhookData = JObject.Parse(webhookJson);
                 string commentBody = webhookData.comment.body.Value;
-
                 var issueJson = JObject.Parse(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 int requestId = Int32.Parse((string)issueJson["issues"].First["fields"][this.CustomFieldId.ToString()]);
-
                 AddMsmNote(requestId,  commentBody);
                 break;
 
