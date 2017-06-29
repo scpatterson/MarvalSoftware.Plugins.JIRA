@@ -163,7 +163,7 @@ public class ApiHandler : PluginHandler
                 break;
         }
     }
-    public string getRequestNotes() {
+    public string GetRequestNotes() {
         HttpWebRequest request = BuildRequest("http://127.0.0.1/MSM" + String.Format("/api/serviceDesk/operational/requests/{0}/notes", MsmRequestNo));
         string reponse = ProcessRequest(request, GetEncodedCredentials(this.MSMAPIKey));
         return reponse;
@@ -190,7 +190,7 @@ public class ApiHandler : PluginHandler
             }
         });
         if (!String.IsNullOrEmpty(IncludeNotes)) {
-            string requestNotes = getRequestNotes();
+            string requestNotes = GetRequestNotes();
             JObject obj = JObject.Parse(requestNotes);
 
             string descriptionString = "";
