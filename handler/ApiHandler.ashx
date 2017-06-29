@@ -174,7 +174,8 @@ public class ApiHandler : PluginHandler
     }
     public int[] CommaSeperatedToInt(string target) {
         int[] numbers = null;
-        if (!String.IsNullOrEmpty(target)) {
+        if (!String.IsNullOrEmpty(target)) 
+        {
             numbers = new int[target.Split(',').Length];
             string[] items = target.Split(',');
             try
@@ -212,7 +213,8 @@ public class ApiHandler : PluginHandler
         var writer = new StreamWriter(content);
         var result = HttpStatusCode.OK.ToString();
 
-        foreach (var attachment in attachments) {
+        foreach (var attachment in attachments) 
+        {
             var data = attachment.Content;
             writer.WriteLine("--{0}", boundary);
             writer.WriteLine("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\"", attachment.Name);

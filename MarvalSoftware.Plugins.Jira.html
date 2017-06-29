@@ -319,7 +319,6 @@
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
-                        console.log(result);
                         this._renderIssue(result);
                         this._summaryElement.value = "";
                         if (attachmentIds.length != 0) {
@@ -395,7 +394,6 @@
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(',') + "&issueNumber=" + issueNumber,
                     contentType: "text/html",
                     success: function (response) {
-                        console.log("Attachment Status: " + response);
                     }.bind(this),
                     error: function () {
                         this._errorPopup();
