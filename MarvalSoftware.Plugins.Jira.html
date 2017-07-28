@@ -309,10 +309,17 @@
                 this._summaryElement = this._element.querySelector("input");
                 this._createElement = this._element.querySelector("button");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
-                eventManager.addHandler(this._summaryElement, "input", this._enableCreateButton, this);
+                eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
                 this.appendChild(this._element);
             },
-            _disableCreateButton: function(){
+            _handleInput() {
+                if (this._summaryElement.value.length > 0) {
+                    this._enableCreateButton();
+                } else {
+                    this._disableCreateButton();
+                }
+            },
+            _disableCreateButton: function () {
                 this._createElement.disabled = true;
             },
             _enableCreateButton: function(){
