@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using MarvalSoftware.UI.WebUI.ServiceDesk.RFP.Plugins;
-using MarvalSoftware.Drogon.Service.Application.Facets.ServiceDesk.Operational.WorkflowStatus;
 
 /// <summary>
 /// ApiHandler
@@ -225,30 +224,22 @@ public class ApiHandler : PluginHandler
         if (isValid)
         {
             //Get the next workflow states for the request...
-            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/workflows/{0}/nextStates?requestId={1}", workflowId, requestId));
+            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/workflows/{0}/nextStates?requestId={1}&namePredicate=equals({2})", workflowId, requestId, httpRequest.QueryString["status"]));
             var requestWorkflowResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-            var requestWorkflowStatuses = requestWorkflowResponse["collection"]["items"];
+            var workflowResponseItems = (IList<JToken>)requestWorkflowResponse["collection"]["items"];
 
-            var workflowStatusId = -1;
-            foreach (JObject workflowObj in requestWorkflowStatuses) {
-                //If the target status is a valid next state in the request's workflow...
-                if (((string)workflowObj["entity"]["data"]["name"]).Equals(httpRequest.QueryString["status"])) {
-                    workflowStatusId = (int)workflowObj["entity"]["data"]["id"];
-                    break;
-                }
-            }
-
-            if (workflowStatusId > -1)
+            if (workflowResponseItems.Count > 0)
             {
                 //Attempt to move the request state.
                 dynamic msmPutRequest = new ExpandoObject();
-                msmPutRequest.WorkflowStatusId = workflowStatusId;
+                msmPutRequest.WorkflowStatusId = workflowResponseItems[0]["entity"]["data"]["id"];
                 msmPutRequest.UpdatedOn = (DateTime)requestResponse["entity"]["data"]["updatedOn"];
 
                 httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/states", requestId), JsonHelper.ToJSON(msmPutRequest), "POST");
                 string moveStatusResponse = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
 
-                if (moveStatusResponse.Contains("500")) {
+                if (moveStatusResponse.Contains("500"))
+                {
                     AddMsmNote(requestId, "JIRA status update failed: a server error occured.");
                 }
             }
