@@ -166,6 +166,8 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
         }
+
+
     }
 
     /// <summary>
