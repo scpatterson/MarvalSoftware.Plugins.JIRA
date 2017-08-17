@@ -185,7 +185,7 @@ public class ApiHandler : PluginHandler
                     numbers[i] = int.Parse(items[i]);
                 }
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 return null;
             }

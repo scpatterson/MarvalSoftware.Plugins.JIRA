@@ -268,7 +268,7 @@
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
-                this._attachments = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getAttachments()._attachments;
+                this._attachments = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getAttachments();
                 this._selectedAttachmentIds = [];
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
