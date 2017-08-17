@@ -165,7 +165,6 @@ public class ApiHandler : PluginHandler
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username=."));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
-
         }
     }
 
