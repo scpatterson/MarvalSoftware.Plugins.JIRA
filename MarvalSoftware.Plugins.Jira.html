@@ -461,6 +461,7 @@
                 var divElement = window.top.document.createElement("DIV");
                 divElement.innerHTML = 'Please enter a JIRA issue number below (e.g ABC-XXX): <div style="z-index:400"><input style="margin-top: 5px; height: 20px; width: 100%; box-sizing: border-box" class="text" type="text" placeholder="Issue Number" /></div>';
                 var aElement = divElement.getElementsByTagName("INPUT")[0];
+
                 var messageBox = MarvalSoftware.UI.MessageBox.show(
                     "Link JIRA Issue",
                     divElement,
@@ -474,11 +475,13 @@
                         }
                     }, this)
                 );
+
                 MarvalSoftware.UI.Dom.EventManager.getInstance().addHandler(aElement, "keypress", function (s, e) {
                     if (e.keyCode == 13) {
                         messageBox.dismiss(MarvalSoftware.UI.MessageBox.Buttons.OK);
                     }
                 }, this);
+
                 aElement.focus();
             },
 
