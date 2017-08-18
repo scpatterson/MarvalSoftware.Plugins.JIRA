@@ -101,6 +101,7 @@ public class ApiHandler : PluginHandler
     //fields
     private int MsmRequestNo;
 
+
     /// <summary>
     /// Handle Request
     /// </summary>
@@ -171,7 +172,10 @@ public class ApiHandler : PluginHandler
                 }
                 break;
         }
+
+
     }
+
     public int[] CommaSeperatedToInt(string target) {
         int[] numbers = null;
         if (!String.IsNullOrEmpty(target)) 
@@ -192,6 +196,7 @@ public class ApiHandler : PluginHandler
         }
         return numbers;
     }
+
     public List<AttachmentViewInfo> GetAttachDTOs(int[] attachmentIds) {
         List<AttachmentViewInfo> attachments = new List<AttachmentViewInfo>();
         var attachmentFacade = new RequestManagementFacade();
@@ -201,6 +206,7 @@ public class ApiHandler : PluginHandler
         }
         return attachments;
     }
+
     /// <summary>
     /// Link attachments to specified Jira issue.
     /// </summary>
@@ -251,6 +257,7 @@ public class ApiHandler : PluginHandler
         }
         return result;
     }
+
     /// <summary>
     /// Create New Jira Issue
     /// </summary>
