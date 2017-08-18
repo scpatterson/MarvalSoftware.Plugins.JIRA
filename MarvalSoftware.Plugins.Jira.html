@@ -178,7 +178,7 @@
                 <option value="Bug">Bug</option>
             </select>
             <div>
-                <input type="text" placeholder="Summary" class="text" maxlength="255" />
+                <input type="text" placeholder="Summary" class="text" maxlength="255"/>
             </div>
             <button>Create</button>
         </div>
@@ -338,6 +338,7 @@
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
                 this._summaryElement = this._element.querySelector("input");
+                this._summaryElement.disabled = true;
                 this._createElement = this._element.querySelector("button");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
@@ -346,25 +347,16 @@
 
             _handleInput() {
                 if (this._summaryElement.value.length > 0) {
-                    this._enableCreateButton();
+                    this._createElement.disabled = false;
                 } else {
-                    this._disableCreateButton();
+                    this._createElement.disabled = true;
                 }
-            },
-
-            _disableCreateButton: function () {
-                this._createElement.disabled = true;
-            },
-
-            _enableCreateButton: function(){
-                this._createElement.disabled = false;
             },
 
             _loadSummaryFromDescription: function () {
                 this._summaryElement.value = this._issueDescription;
-                if (this._summaryElement.value.length === 0) {
-                    this._disableCreateButton();
-                } else {
+                if (this._summaryElement.value.length > 0) {
+                    this._summaryElement.disabled = false;
                     this._summaryElement.select();
                 }
             },
