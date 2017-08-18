@@ -120,7 +120,6 @@
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
-                    margin-bottom: 10px;
                     line-height: 30px;
                     bottom: 60px;
                     position: absolute;
@@ -174,6 +173,24 @@
                     bottom: 0px;
                 }
 
+                .MarvalSoftware-Jira > .newIssue > .paging {
+                    position: absolute;
+                    right: 0px;
+                    top: 10px;
+                }
+
+                .MarvalSoftware-Jira > .newIssue > .paging > * {
+                    display: inline-block;
+                    margin-left: 5px;
+                }
+
+                    .MarvalSoftware-Jira > .newIssue > .paging > button {
+                        border: 1px solid #CCC;
+                        border-radius: 2px;
+                        background: #F5F5F5;
+                        box-sizing: border-box;
+                        width: 50px;
+                    }
 
                 .MarvalSoftware-Jira > .newIssue > .projects {
                     position: absolute;
@@ -181,10 +198,6 @@
                     right: 10px;
                     bottom: 35px;
                 }
-                    .MarvalSoftware-Jira > .newIssue > .projects > p {
-                        float: left;
-                        font-size: 14px;
-                    }
 
                     .MarvalSoftware-Jira > .newIssue >  .projects > .projectLoading {
                         background-repeat: no-repeat;
@@ -192,9 +205,11 @@
                         width: 20px;
                         height: 20px;
                     }
-                    .MarvalSoftware-Jira > .newIssue > .projects > .projectLoading > select{
-                        margin-left: 5px;
-                    }
+
+                        .MarvalSoftware-Jira > .newIssue > .projects > .projectLoading > select {
+                            max-width: 100px;
+                            min-width: 100px;
+                        }
     </style>
     <div class="MarvalSoftware-Jira">
         <div class="header">
@@ -205,7 +220,6 @@
         </div>
         <div class="newIssue">
             <div class="projects">
-                <p>Select Project: </p>
                 <div class="projectLoading">
                     <select class="projectSelect"></select>
                 </div>
@@ -217,7 +231,12 @@
             <div class="summaryDiv">
                 <input type="text" placeholder="Summary" class="text" maxlength="255" />
             </div>
-            <button>Create</button>
+            <button class="createButton">Create</button>
+            <div class="paging">
+                <button class="previousPage"><</button>
+                <p class="pagingInfo">1/1</p>
+                <button class="nextPage">></button>
+            </div>
         </div>
     </div>
 </template>
@@ -281,6 +300,12 @@
             _renderIssuesRequest: null,
             _projectLoadingElement: null,
             _typeLoadingElement: null,
+            _previousPageElement: null,
+            _nextPageElement: null,
+            _pageLimit: 10,
+            _currentPage: 0,
+            _pageCount: null,
+            _pageInfoElement: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
@@ -304,43 +329,6 @@
                 if (!this._issuesElement.textContent.indexOf(issueElement.textContent) != -1) {
                     this._issuesElement.appendChild(issueElement);
                 }
-            },
-
-            _renderIssuesFromAllProjects: function () {
-                $.ajax({
-                    type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetAllIssues&requestNumber=" + this._requestNumber,
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    success: function (result) {
-                        this._issuesElement.style.backgroundImage = "";
-                        result.issues.forEach(this._renderIssue.bind(this));                           
-                    }.bind(this),
-                    error: function () {
-                        this._errorPopup();
-                    }.bind(this)
-                });
-            },
-
-            _renderIssues: function () {
-                if (this._renderIssuesRequest) {
-                    this._renderIssuesRequest.abort();
-                    this._renderIssuesRequest = null;
-                }
-
-                this._renderIssuesRequest = $.ajax({
-                    type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetJiraIssues&requestNumber=" + this._requestNumber,
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    success: function (result) {
-                        this._issuesElement.style.backgroundImage = "";
-                        result.issues.forEach(this._renderIssue.bind(this));
-                    }.bind(this),
-                    error: function () {
-                        this._errorPopup();
-                    }.bind(this)
-                });
             },
 
             _createNewIssue: function (issueSummary, issueType) {
@@ -400,12 +388,17 @@
                 this._typeLoadingElement = this._element.querySelector(".newIssue > .typeLoading");
                 this._typeLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 this._summaryElement = this._element.querySelector("input");
-                this._createElement = this._element.querySelector("button");
+                this._createElement = this._element.querySelector(".createButton");
                 this._projectSelectElement = this._element.querySelector(".MarvalSoftware-Jira > .newIssue > .projects > .projectLoading > select");
                 this._projectLoadingElement = this._element.querySelector(".MarvalSoftware-Jira > .newIssue > .projects > .projectLoading");
                 this._projectLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
+                this._previousPageElement = this._element.querySelector(".previousPage");
+                this._nextPageElement = this._element.querySelector(".nextPage");
+                this._pageInfoElement = this._element.querySelector(".paging > .pagingInfo");
                 eventManager.addHandler(this._projectSelectElement, "change", this._populateIssueTypes, this);    
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
+                eventManager.addHandler(this._previousPageElement, "click", this._previousPageElement_click, this);
+                eventManager.addHandler(this._nextPageElement, "click", this._nextPageElement_click, this);
                 this._projectSelectElement.style.display = 'none';
                 this._typeElement.style.display = 'none';
                 this.appendChild(this._element);
@@ -427,7 +420,7 @@
                         }
                     }.bind(this),
                     error: function (error) {
-                        console.log(error);
+                        this._errorPopup();
                     }.bind(this)
                 });
             },
@@ -489,7 +482,8 @@
                     this._renderElement();
                     this._loadJiraProjectNames();
                     this._populateIssueTypes();
-                    this._renderIssuesFromAllProjects();
+                    this._renderIssuesForCurrentPage();
+                    this._setupPaging();
                 }
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
@@ -595,6 +589,69 @@
 
             _createElement_click: function (sender, e) {
                 this._createNewIssue(this._summaryElement.value, this._typeElement.value);
+                e.preventDefault();
+            },
+
+            _updateCurrentPageNumber: function () {
+                var splitInfo = this._pageInfoElement.innerText.split("/");
+                splitInfo[0] = (this._currentPage / this._pageLimit + 1).toString();
+                this._pageInfoElement.innerText = splitInfo[0] + "/" + splitInfo[1];
+            },
+
+            _setupPaging: function () {
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetTotalIssueCountForRequest&requestNumber=" + this._requestNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        console.log(result);
+                        this._pageCount = Math.ceil(result.total / this._pageLimit);
+                        this._updatePageCount(this._pageCount);
+                    }.bind(this),
+                    error: function () {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _updatePageCount: function (pageCount) {
+                var splitInfo = this._pageInfoElement.innerText.split("/");
+                this._pageInfoElement.innerText = splitInfo[0] + "/" + pageCount;
+            },
+
+            _renderIssuesForCurrentPage: function () {
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetPagedIssues&page=" + this._currentPage + "&pageLimit=" + this._pageLimit + "&requestNumber=" + this._requestNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._clearIssues();
+                        this._issuesElement.style.backgroundImage = "";
+                        result.issues.forEach(this._renderIssue.bind(this));  
+                    }.bind(this),
+                    error: function (error) {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _previousPageElement_click: function (sender, e) {
+                if (this._currentPage > 0) {
+                    this._currentPage -= this._pageLimit;
+                    this._renderIssuesForCurrentPage();
+                    this._updateCurrentPageNumber();
+                } 
+                e.preventDefault();
+            },
+
+            _nextPageElement_click: function (sender, e) {
+                if ((this._currentPage / this._pageLimit) < this._pageCount - 1) {
+                    this._currentPage += this._pageLimit;
+                    this._renderIssuesForCurrentPage();
+                    this._updateCurrentPageNumber();
+                }
                 e.preventDefault();
             }
         });

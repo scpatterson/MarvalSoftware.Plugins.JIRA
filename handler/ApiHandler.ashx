@@ -99,6 +99,10 @@ public class ApiHandler : PluginHandler
 
     private string JiraProjectList { get; set; }
 
+    private string PageNo { get; set; }
+
+    private string PageLimit { get; set; }
+
     //fields
     private int MsmRequestNo;
 
@@ -130,6 +134,8 @@ public class ApiHandler : PluginHandler
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
         JiraProject = httpRequest.Params["project"] ?? string.Empty;
         JiraProjectList = httpRequest.Params["projectList"] ?? string.Empty;
+        PageNo = httpRequest.Params["page"] ?? string.Empty;
+        PageLimit = httpRequest.Params["pageLimit"] ?? string.Empty;
     }
 
     /// <summary>
@@ -145,7 +151,7 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(PreRequisiteCheck());
                 break;
             case "GetJiraIssues":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1} and project={2}&maxResults=500", this.CustomFieldName, this.MsmRequestNo, ProjectName));
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}", this.CustomFieldName, this.MsmRequestNo));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "LinkJiraIssue":
@@ -164,10 +170,6 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-            case "ChangeJiraProject":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql=project={0} and '{1}'={2}&maxResults=500", JiraProject, this.CustomFieldName, this.MsmRequestNo));
-                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
-                break;
             case "PopulateIssueTypes":
                 if (JiraProject.Equals("")) {
                     JiraProject = ProjectName;
@@ -175,8 +177,14 @@ public class ApiHandler : PluginHandler
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project/{0}", JiraProject));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
-            case "GetAllIssues":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}&maxResults=500", this.CustomFieldName, this.MsmRequestNo));
+            case "GetTotalIssueCountForRequest":
+                //Using these query parameters causes no issue data to be returned, only basic information such as total number of issues, reducing the size 
+                //of the request dramatically (from approx 165kb for 123 issues down to 400 bytes)
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}&fields=*none&maxResults=0", this.CustomFieldName, this.MsmRequestNo));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
+            case "GetPagedIssues":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}&startAt={2}&maxResults={3}", this.CustomFieldName, this.MsmRequestNo, this.PageNo, this.PageLimit));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "FetchJiraProjectNames":
@@ -185,6 +193,8 @@ public class ApiHandler : PluginHandler
                 break;
 
         }
+
+
     }
 
     /// <summary>
