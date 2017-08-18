@@ -178,7 +178,7 @@
                 <option value="Bug">Bug</option>
             </select>
             <div>
-                <input type="text" placeholder="Summary" class="text" maxlength="255" />
+                <input type="text" placeholder="Summary" class="text" maxlength="255" disabled/>
             </div>
             <button>Create</button>
         </div>
@@ -235,7 +235,7 @@
         {
             _pluginPath: null,
             _requestNumber: null,
-            _issueDescription: null,
+            _requestDescription: null,
             _element: null,
             _issuesElement: null,
             _typeElement: null,
@@ -245,7 +245,7 @@
             
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
-                this._issueDescription = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getDescription();
+                this._requestDescription = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getDescription();
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
@@ -338,7 +338,6 @@
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
                 this._summaryElement = this._element.querySelector("input");
-                this._summaryElement.disabled = true;
                 this._createElement = this._element.querySelector("button");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
@@ -346,15 +345,11 @@
             },
 
             _handleInput() {
-                if (this._summaryElement.value.length > 0) {
-                    this._createElement.disabled = false;
-                } else {
-                    this._createElement.disabled = true;
-                }
+                this._summaryElement.value.length > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
             },
 
             _loadSummaryFromDescription: function () {
-                this._summaryElement.value = this._issueDescription;
+                this._summaryElement.value = this._requestDescription;
                 if (this._summaryElement.value.length > 0) {
                     this._summaryElement.disabled = false;
                     this._summaryElement.select();
