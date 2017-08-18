@@ -243,9 +243,11 @@
             _renderIssuesRequest: null,
             _contactEmail: null,
             _contactUsername: null,
+
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
                 this._contactEmail = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getContactPreferredEmail();
+
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                     if (this._contactEmail != null) {
@@ -302,7 +304,6 @@
                             for (var i = 0; i < result.length; i++) {
                                 if (result[i]["emailAddress"] === this._contactEmail) {
                                     this._contactUsername = result[i]["name"];
-                                    console.log(this._contactUsername);
                                     return;
                                 }
                             }
@@ -473,6 +474,7 @@
                         }
                     }, this)
                 );
+
                 MarvalSoftware.UI.Dom.EventManager.getInstance().addHandler(aElement, "keypress", function (s, e) {
                     if (e.keyCode == 13) {
                         messageBox.dismiss(MarvalSoftware.UI.MessageBox.Buttons.OK);
