@@ -161,6 +161,7 @@
                     border-radius: 2px;
                     background: #F5F5F5;
                 }
+
     </style>
     <div class="MarvalSoftware-Jira">
         <div class="header">
@@ -177,7 +178,7 @@
                 <option value="Bug">Bug</option>
             </select>
             <div>
-                <input type="text" placeholder="Summary" class="text" maxlength="255" />
+                <input type="text" placeholder="Summary" class="text" maxlength="255" disabled/>
             </div>
             <button>Create</button>
         </div>
@@ -234,15 +235,17 @@
         {
             _pluginPath: null,
             _requestNumber: null,
+            _requestDescription: null,
             _element: null,
             _issuesElement: null,
             _typeElement: null,
             _summaryElement: null,
             _createElement: null,
             _renderIssuesRequest: null,
-
+            
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
+                this._requestDescription = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getDescription();
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
@@ -337,7 +340,20 @@
                 this._summaryElement = this._element.querySelector("input");
                 this._createElement = this._element.querySelector("button");
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
+                eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
                 this.appendChild(this._element);
+            },
+
+            _handleInput() {
+                this._summaryElement.value.length > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
+            },
+
+            _loadSummaryFromDescription: function () {
+                this._summaryElement.value = this._requestDescription;
+                if (this._summaryElement.value.length > 0) {
+                    this._summaryElement.disabled = false;
+                    this._summaryElement.select();
+                }
             },
 
             _popup: function () {
@@ -355,11 +371,15 @@
                     });
                     this._renderElement();
                     this._renderIssues();
-                }
+                    this._loadSummaryFromDescription();
+                } 
+
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
                 }
+
                 this._pluginWindow.show();
+                this._summaryElement.focus();
             },
 
             _errorPopup: function (result) {
