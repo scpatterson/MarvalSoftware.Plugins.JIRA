@@ -259,7 +259,7 @@ public class ApiHandler : PluginHandler
                 issuetype = new
                 {
                     name = this.JiraType
-                },
+                }
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
