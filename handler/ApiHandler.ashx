@@ -165,8 +165,8 @@ public class ApiHandler : PluginHandler
             case "SendAttachments":
                 if (!String.IsNullOrEmpty(AttachmentIds))
                 {
-                    int[] attachmentNumIds = CommaSeperatedToInt(AttachmentIds);
-                    List<AttachmentViewInfo> att = GetAttachDTOs(attachmentNumIds);
+                    int[] attachmentNumIds = Array.ConvertAll<string, int>(AttachmentIds.Split(','), Convert.ToInt32);
+                    List<AttachmentViewInfo> att = GetAttachmentDTOs(attachmentNumIds);
                     string attachmentResult = PostAttachments(att, JiraIssueNo);
                     context.Response.Write(attachmentResult);
                 }
@@ -176,28 +176,12 @@ public class ApiHandler : PluginHandler
 
     }
 
-    public int[] CommaSeperatedToInt(string target) {
-        int[] numbers = null;
-        if (!String.IsNullOrEmpty(target)) 
-        {
-            numbers = new int[target.Split(',').Length];
-            string[] items = target.Split(',');
-            try
-            {
-                for (int i = 0; i < items.Length; i++)
-                {
-                    numbers[i] = int.Parse(items[i]);
-                }
-            }
-            catch (FormatException)
-            {
-                return null;
-            }
-        }
-        return numbers;
-    }
-
-    public List<AttachmentViewInfo> GetAttachDTOs(int[] attachmentIds) {
+    /// <summary>
+    /// Gets attachment DTOs from array of attachment Ids
+    /// </summary>
+    /// <param name="attachmentIds"></param>
+    /// <returns>A list of attachment DTOs</returns>
+    public List<AttachmentViewInfo> GetAttachmentDTOs(int[] attachmentIds) {
         List<AttachmentViewInfo> attachments = new List<AttachmentViewInfo>();
         var attachmentFacade = new RequestManagementFacade();
         for (int i = 0; i < attachmentIds.Length; i++)
@@ -212,14 +196,14 @@ public class ApiHandler : PluginHandler
     /// </summary>
     /// <param name="attachments"></param>
     /// <param name="issueKey"></param>
-    /// <returns></returns>
+    /// <returns>The result of attempting to post the attachment data.</returns>
     public string PostAttachments(List<AttachmentViewInfo> attachments, string issueKey) {
         var boundary = string.Format("----------{0:N}", Guid.NewGuid());
         var content = new MemoryStream();
         var writer = new StreamWriter(content);
         var result = HttpStatusCode.OK.ToString();
 
-        foreach (var attachment in attachments) 
+        foreach (var attachment in attachments)
         {
             var data = attachment.Content;
             writer.WriteLine("--{0}", boundary);
@@ -312,43 +296,35 @@ public class ApiHandler : PluginHandler
 
         HttpWebRequest httpWebRequest;
         httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests?number={0}", requestNumber));
-        var requestNumberResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-        var requestId = (int)requestNumberResponse["collection"]["items"].First["entity"]["data"]["id"];
-
-        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}", requestId));
-        var requestIdResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-        var workflowId = requestIdResponse["entity"]["data"]["requestStatus"]["workflowStatus"]["workflow"]["id"];
+        var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
+        var requestId = (int)requestResponse["items"].First["id"];
 
         if (isValid)
         {
-            //Get the next workflow states for the request...
-            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/workflows/{0}/nextStates?requestId={1}&namePredicate=equals({2})", workflowId, requestId, httpRequest.QueryString["status"]));
-            var requestWorkflowResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-            var workflowResponseItems = (IList<JToken>)requestWorkflowResponse["collection"]["items"];
+            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/administration/states?name={0}", httpRequest.QueryString["status"]));
+            var statusResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
 
-            if (workflowResponseItems.Count > 0)
+            string response = string.Empty;
+            if ((int)statusResponse["totalItemCount"] > 0)
             {
-                //Attempt to move the request state.
                 dynamic msmPutRequest = new ExpandoObject();
-                msmPutRequest.WorkflowStatusId = workflowResponseItems[0]["entity"]["data"]["id"];
-                msmPutRequest.UpdatedOn = (DateTime)requestNumberResponse["collection"]["items"].First["entity"]["data"]["updatedOn"];
+                msmPutRequest.statusId = (int)statusResponse["items"]["entity"]["data"].First["id"];
+                msmPutRequest.updatedOn = (DateTime)requestResponse["items"]["entity"]["data"].First["updatedOn"];
 
                 httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/states", requestId), JsonHelper.ToJSON(msmPutRequest), "POST");
-                string moveStatusResponse = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
 
-                if (moveStatusResponse.Contains("500"))
-                {
-                    AddMsmNote(requestId, "JIRA status update failed: a server error occured.");
-                }
+                response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
             }
-            else
+
+            if (response.Contains("404") || (int)statusResponse["totalItemCount"] == 0)
             {
                 AddMsmNote(requestId, "JIRA status update failed: " + httpRequest.QueryString["status"] + " is not a valid next state.");
             }
+
         }
         else
         {
-            AddMsmNote(requestId, "JIRA status update failed: all linked JIRA issues must be in the same status.");
+            AddMsmNote(requestId,  "JIRA status update failed: all linked JIRA issues must be in the same status.");
         }
     }
 
@@ -360,10 +336,9 @@ public class ApiHandler : PluginHandler
         IDictionary<string, object> body = new Dictionary<string, object>();
         body.Add("id", requestNumber);
         body.Add("content", note);
-        body.Add("type", "public");
 
         HttpWebRequest httpWebRequest;
-        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
         ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
     }
 
