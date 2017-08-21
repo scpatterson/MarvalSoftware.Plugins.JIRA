@@ -216,10 +216,13 @@ public class ApiHandler : PluginHandler
         var isValid = StatusValidation(httpRequest, out requestNumber);
 
         HttpWebRequest httpWebRequest;
-        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}", requestNumber));
-        var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-        var requestId = (int)requestResponse["entity"]["data"]["id"];
-        var workflowId = requestResponse["entity"]["data"]["requestStatus"]["workflowStatus"]["workflow"]["id"];
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests?number={0}", requestNumber));
+        var requestNumberResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
+        var requestId = (int)requestNumberResponse["collection"]["items"].First["entity"]["data"]["id"];
+
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}", requestId));
+        var requestIdResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
+        var workflowId = requestIdResponse["entity"]["data"]["requestStatus"]["workflowStatus"]["workflow"]["id"];
 
         if (isValid)
         {
@@ -233,7 +236,7 @@ public class ApiHandler : PluginHandler
                 //Attempt to move the request state.
                 dynamic msmPutRequest = new ExpandoObject();
                 msmPutRequest.WorkflowStatusId = workflowResponseItems[0]["entity"]["data"]["id"];
-                msmPutRequest.UpdatedOn = (DateTime)requestResponse["entity"]["data"]["updatedOn"];
+                msmPutRequest.UpdatedOn = (DateTime)requestNumberResponse["collection"]["items"].First["entity"]["data"]["updatedOn"];
 
                 httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/states", requestId), JsonHelper.ToJSON(msmPutRequest), "POST");
                 string moveStatusResponse = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
@@ -250,7 +253,7 @@ public class ApiHandler : PluginHandler
         }
         else
         {
-            AddMsmNote(requestId,  "JIRA status update failed: all linked JIRA issues must be in the same status.");
+            AddMsmNote(requestId, "JIRA status update failed: all linked JIRA issues must be in the same status.");
         }
     }
 
