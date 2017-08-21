@@ -165,7 +165,6 @@
                     bottom: 10px;
                 }
 
-<<<<<<< HEAD
         .attachmentHeader {
             font-size: 16px;
         }
@@ -181,8 +180,6 @@
                     margin-right: 5px;                
                 }
 
-=======
->>>>>>> 4822173fce755b5313c8c73f65a8f90bf797e657
     </style>
     <div class="MarvalSoftware-Jira">
         <div class="header">
@@ -268,7 +265,6 @@
             _summaryElement: null,
             _createElement: null,
             _renderIssuesRequest: null,
-<<<<<<< HEAD
             _attachments: null,
             _selectedAttachmentIds: null,
 
@@ -278,12 +274,6 @@
                 this._attachments = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getAttachments();
                 
                 this._selectedAttachmentIds = [];
-=======
-            
-            init: function () {
-                this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
-                this._requestDescription = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getDescription();
->>>>>>> 4822173fce755b5313c8c73f65a8f90bf797e657
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
@@ -379,22 +369,13 @@
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
                 this._summaryElement = this._element.querySelector("input");
-<<<<<<< HEAD
                 this._createElement = this._element.querySelector(".createButton");
                 eventManager.addHandler(this._createElement, "click", this._showAttachmentsPopup, this);
-=======
-                this._createElement = this._element.querySelector("button");
-                eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
->>>>>>> 4822173fce755b5313c8c73f65a8f90bf797e657
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
                 this.appendChild(this._element);
             },
 
-<<<<<<< HEAD
             _handleInput: function() {
-=======
-            _handleInput() {
->>>>>>> 4822173fce755b5313c8c73f65a8f90bf797e657
                 this._summaryElement.value.length > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
             },
 
@@ -406,7 +387,6 @@
                 }
             },
 
-<<<<<<< HEAD
             _renderAttachments: function (container) {
                 for (var i = 0; i < this._attachments.length; i++) {
                     var div = document.createElement("div");
@@ -465,8 +445,6 @@
                 );
             },
 
-=======
->>>>>>> 4822173fce755b5313c8c73f65a8f90bf797e657
             _popup: function () {
                 if (!this._pluginWindow) {
                     this._pluginWindow = new MarvalSoftware.UI.Window({
