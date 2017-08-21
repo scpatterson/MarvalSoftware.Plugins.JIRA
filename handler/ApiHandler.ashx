@@ -259,7 +259,7 @@ public class ApiHandler : PluginHandler
                 issuetype = new
                 {
                     name = this.JiraType
-                }
+                },
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
@@ -296,43 +296,35 @@ public class ApiHandler : PluginHandler
 
         HttpWebRequest httpWebRequest;
         httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests?number={0}", requestNumber));
-        var requestNumberResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-        var requestId = (int)requestNumberResponse["collection"]["items"].First["entity"]["data"]["id"];
-
-        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}", requestId));
-        var requestIdResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-        var workflowId = requestIdResponse["entity"]["data"]["requestStatus"]["workflowStatus"]["workflow"]["id"];
+        var requestResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
+        var requestId = (int)requestResponse["items"].First["id"];
 
         if (isValid)
         {
-            //Get the next workflow states for the request...
-            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/workflows/{0}/nextStates?requestId={1}&namePredicate=equals({2})", workflowId, requestId, httpRequest.QueryString["status"]));
-            var requestWorkflowResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
-            var workflowResponseItems = (IList<JToken>)requestWorkflowResponse["collection"]["items"];
+            httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/administration/states?name={0}", httpRequest.QueryString["status"]));
+            var statusResponse = JObject.Parse(ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey)));
 
-            if (workflowResponseItems.Count > 0)
+            string response = string.Empty;
+            if ((int)statusResponse["totalItemCount"] > 0)
             {
-                //Attempt to move the request state.
                 dynamic msmPutRequest = new ExpandoObject();
-                msmPutRequest.WorkflowStatusId = workflowResponseItems[0]["entity"]["data"]["id"];
-                msmPutRequest.UpdatedOn = (DateTime)requestNumberResponse["collection"]["items"].First["entity"]["data"]["updatedOn"];
+                msmPutRequest.statusId = (int)statusResponse["items"]["entity"]["data"].First["id"];
+                msmPutRequest.updatedOn = (DateTime)requestResponse["items"]["entity"]["data"].First["updatedOn"];
 
                 httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/states", requestId), JsonHelper.ToJSON(msmPutRequest), "POST");
-                string moveStatusResponse = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
 
-                if (moveStatusResponse.Contains("500"))
-                {
-                    AddMsmNote(requestId, "JIRA status update failed: a server error occured.");
-                }
+                response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
             }
-            else
+
+            if (response.Contains("404") || (int)statusResponse["totalItemCount"] == 0)
             {
                 AddMsmNote(requestId, "JIRA status update failed: " + httpRequest.QueryString["status"] + " is not a valid next state.");
             }
+
         }
         else
         {
-            AddMsmNote(requestId, "JIRA status update failed: all linked JIRA issues must be in the same status.");
+            AddMsmNote(requestId,  "JIRA status update failed: all linked JIRA issues must be in the same status.");
         }
     }
 
@@ -344,10 +336,9 @@ public class ApiHandler : PluginHandler
         IDictionary<string, object> body = new Dictionary<string, object>();
         body.Add("id", requestNumber);
         body.Add("content", note);
-        body.Add("type", "public");
 
         HttpWebRequest httpWebRequest;
-        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/serviceDesk/operational/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
+        httpWebRequest = BuildRequest(this.MSMBaseUrl + String.Format("/api/requests/{0}/notes/", requestNumber), JsonHelper.ToJSON(body), "POST");
         ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
     }
 
