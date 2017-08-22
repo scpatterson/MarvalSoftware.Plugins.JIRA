@@ -303,7 +303,7 @@
             _typeLoadingElement: null,
             _previousPageElement: null,
             _nextPageElement: null,
-            _pageLimit: 10,
+            _pageLimit: 12,
             _currentPage: 0,
             _pageCount: null,
             _pageInfoElement: null,
@@ -495,20 +495,11 @@
                         bodyElement: this
                     });
                     this._renderElement();
-<<<<<<< HEAD
                     this._loadJiraProjectNames();
                     this._populateIssueTypes();
                     this._renderIssuesForCurrentPage();
                     this._setupPaging();
                 }
-                if (!this._pluginWindow.isVisible()) {
-                    this._pluginWindow.centerToViewport();
-                }
-                this._pluginWindow.show();
-=======
-                    this._renderIssues();
-                    this._loadSummaryFromDescription();
-                } 
 
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
@@ -516,7 +507,6 @@
 
                 this._pluginWindow.show();
                 this._summaryElement.focus();
->>>>>>> master
             },
 
             _errorPopup: function (result) {
@@ -618,7 +608,6 @@
             _createElement_click: function (sender, e) {
                 this._createNewIssue(this._summaryElement.value, this._typeElement.value);
                 e.preventDefault();
-<<<<<<< HEAD
             },
 
             _updateCurrentPageNumber: function () {
@@ -681,8 +670,6 @@
                     this._updateCurrentPageNumber();
                 }
                 e.preventDefault();
-=======
->>>>>>> master
             }
         });
     })();

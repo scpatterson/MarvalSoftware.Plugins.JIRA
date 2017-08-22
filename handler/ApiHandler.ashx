@@ -170,7 +170,6 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-<<<<<<< HEAD
             case "PopulateIssueTypes":
                 if (JiraProject.Equals("")) {
                     JiraProject = ProjectName;
@@ -193,8 +192,6 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
 
-=======
->>>>>>> master
         }
 
 
