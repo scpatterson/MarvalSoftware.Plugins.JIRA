@@ -187,13 +187,16 @@ public class ApiHandler : PluginHandler
                 issuetype = new
                 {
                     name = this.JiraType
-                },
-                reporter = new {
-                    name = this.JiraReporter ?? this.Username
                 }
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
+
+        if (!this.JiraReporter.Equals("null")) {
+            dynamic reporter = new JObject();
+            reporter.name = this.JiraReporter;
+            jobject.fields["reporter"] = reporter;
+        }
 
         var httpWebRequest = BuildRequest(this.BaseUrl + "issue/", jobject.ToString(), "POST");
         return JObject.Parse(ProcessRequest(httpWebRequest, this.JiraCredentials));
