@@ -420,29 +420,33 @@
 
             _showAttachmentsPopup: function (sender, e) {
                 e.preventDefault();
-                var template = document.querySelector('.attachmentPopupTemplate').content;
-                var templateElement = window.top.document.importNode(template, true);
-                var checkboxDiv = templateElement.querySelector(".checkboxes");
-                this._renderAttachments(checkboxDiv);
-                var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
-                    "New Jira Issue",
-                    templateElement,
-                    MarvalSoftware.UI.MessageBox.INFORMATION,
-                    [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
-                    MarvalSoftware.UI.MessageBox.Buttons.OK,
-                    400,
-                    MarvalSoftware.createDelegate(function (sender, e) {
-                        if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
-                            for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
-                                var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
-                                if (checkbox.checked) {
-                                    this._selectedAttachmentIds.push(parseInt(checkbox.value));
+                if (this._attachments.length == 0) {
+                    this._createNewIssue(this._summaryElement.value, this._typeElement.value, []);
+                } else {
+                    var template = document.querySelector('.attachmentPopupTemplate').content;
+                    var templateElement = window.top.document.importNode(template, true);
+                    var checkboxDiv = templateElement.querySelector(".checkboxes");
+                    this._renderAttachments(checkboxDiv);
+                    var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
+                        "New Jira Issue",
+                        templateElement,
+                        MarvalSoftware.UI.MessageBox.INFORMATION,
+                        [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
+                        MarvalSoftware.UI.MessageBox.Buttons.OK,
+                        400,
+                        MarvalSoftware.createDelegate(function (sender, e) {
+                            if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
+                                for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
+                                    var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
+                                    if (checkbox.checked) {
+                                        this._selectedAttachmentIds.push(parseInt(checkbox.value));
+                                    }
                                 }
+                                this._createNewIssue(this._summaryElement.value, this._typeElement.value, this._selectedAttachmentIds);
                             }
-                            this._createNewIssue(this._summaryElement.value, this._typeElement.value, this._selectedAttachmentIds);
-                        }
-                    }, this)
-                );
+                        }, this)
+                    );
+                }
             },
 
             _popup: function () {
