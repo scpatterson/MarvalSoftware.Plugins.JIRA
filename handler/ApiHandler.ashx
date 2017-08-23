@@ -97,7 +97,6 @@ public class ApiHandler : PluginHandler
     private string JiraType { get; set; }
 
     private string AttachmentIds { get; set; }
-
     //fields
     private int MsmRequestNo;
 
@@ -315,12 +314,10 @@ public class ApiHandler : PluginHandler
 
                 response = ProcessRequest(httpWebRequest, GetEncodedCredentials(this.MSMAPIKey));
             }
-
             if (response.Contains("404") || (int)statusResponse["totalItemCount"] == 0)
             {
                 AddMsmNote(requestId, "JIRA status update failed: " + httpRequest.QueryString["status"] + " is not a valid next state.");
             }
-
         }
         else
         {
