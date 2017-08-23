@@ -40,7 +40,7 @@
             .MarvalSoftware-Jira > .issues {
                 position: absolute;
                 top: 50px;
-                bottom: 82px;
+                bottom: 100px;
                 left: 10px;
                 right: 10px;
                 overflow: auto;
@@ -116,15 +116,15 @@
                 bottom: 10px;
                 left: 10px;
                 right: 10px;
-                height: 62px;
+                height: 90px;
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
-                    margin-bottom: 5px;
+                    margin-bottom: 10px;
                     line-height: 30px;
                 }
 
-                .MarvalSoftware-Jira > .newIssue > .issueTypeSelect {
+                .MarvalSoftware-Jira > .newIssue > select {
                     box-sizing: border-box;
                     position: absolute;
                     left: 0;
@@ -134,14 +134,12 @@
                     min-width: 100px;
                     width: 100px;
                     border: 1px solid #CCC;
-                    bottom: 10px;
                 }
 
                 .MarvalSoftware-Jira > .newIssue > div {
                     position: absolute;
                     left: 110px;
                     right: 90px;
-                    bottom: 10px;
                 }
 
                     .MarvalSoftware-Jira > .newIssue > div > input {
@@ -152,7 +150,7 @@
                         border: 1px solid #CCC;
                     }
 
-                .MarvalSoftware-Jira > .newIssue > .createButton {
+                .MarvalSoftware-Jira > .newIssue > button {
                     box-sizing: border-box;
                     position: absolute;
                     right: 0;
@@ -162,22 +160,33 @@
                     border: 1px solid #CCC;
                     border-radius: 2px;
                     background: #F5F5F5;
-                    bottom: 10px;
+                }
+
+                .MarvalSoftware-Jira > .newIssue > .selectAttachments {
+                    position: absolute;
+                    bottom: 0px;
+                    font-size: 13px;
+                    text-decoration: none;
+                    color: #3B73AF;
                 }
 
         .attachmentHeader {
-            font-size: 16px;
+            font-size: 13px;
         }
-        .checkboxes {
+
+        .attachmentCheckboxes {
             height: 200px;
             overflow: auto;
             padding-top: 10px;
         }
-            .checkboxes div {
+
+            .attachmentCheckboxes div {
                 margin-top: 10px;
             }
-                .checkboxes div input {
-                    margin-right: 5px;                
+
+                .attachmentCheckboxes div input {
+                    margin-right: 5px;
+                    vertical-align: middle;
                 }
 
     </style>
@@ -190,7 +199,7 @@
         </div>
         <div class="newIssue">
             <h1>New Issue</h1>
-            <select class="issueTypeSelect">
+            <select>
                 <option value="Story">Story</option>
                 <option value="Task">Task</option>
                 <option value="Bug">Bug</option>
@@ -198,7 +207,8 @@
             <div>
                 <input type="text" placeholder="Summary" class="text" maxlength="255" disabled/>
             </div>
-            <button class="createButton">Create</button>
+            <button>Create</button>
+            <a href="javascript:void(0);" class="selectAttachments">Attachments</a>
         </div>
     </div>
 </template>
@@ -244,8 +254,13 @@
     </div>
 </template>
 <template class="attachmentPopupTemplate">
-    <p class="attachmentHeader">Select Request Attachment(s)</p>
-    <div class="checkboxes">
+    <p class="attachmentHeader">Select Request Attachment(s):</p>
+    <div class="attachmentCheckboxes"></div>
+</template>
+<template class="attachmentTemplate">
+    <div>
+        <input type="checkbox" class="attachmentCheckbox"/>
+        <label class="attachmentLabel"></label>
     </div>
 </template>
 <script>
@@ -267,6 +282,7 @@
             _renderIssuesRequest: null,
             _attachments: null,
             _selectedAttachmentIds: null,
+            _selectAttachmentElement: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
@@ -316,7 +332,7 @@
                 });
             },
 
-            _createNewIssue: function (issueSummary, issueType, attachmentIds) {
+            _createNewIssue: function (issueSummary, issueType) {
                 $.ajax({
                     type: "POST",
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType,
@@ -325,8 +341,9 @@
                     success: function (result) {
                         this._renderIssue(result);
                         this._summaryElement.value = "";
-                        if (attachmentIds.length != 0) {
-                            this._appendAttachments(attachmentIds, result.key);
+                        if (this._selectedAttachmentIds.length != 0) {
+                            this._appendAttachments(this._selectedAttachmentIds, result.key);
+
                         }
                     }.bind(this),
                     error: function () {
@@ -369,8 +386,10 @@
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
                 this._summaryElement = this._element.querySelector("input");
-                this._createElement = this._element.querySelector(".createButton");
-                eventManager.addHandler(this._createElement, "click", this._showAttachmentsPopup, this);
+                this._createElement = this._element.querySelector("button");
+                this._selectAttachmentElement = this._element.querySelector(".selectAttachments");
+                eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
+                eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
                 this.appendChild(this._element);
             },
@@ -389,19 +408,17 @@
 
             _renderAttachments: function (container) {
                 for (var i = 0; i < this._attachments.length; i++) {
-                    var div = document.createElement("div");
-                    div.style.display = "block";
-                    var checkbox = document.createElement("input");
-                    checkbox.type = "checkbox";
+                    var template = document.querySelector(".attachmentTemplate").content;
+                    var templateElement = window.top.document.importNode(template, true);
+                    var checkboxLabel = templateElement.querySelector(".attachmentLabel");
+                    var checkbox = templateElement.querySelector(".attachmentCheckbox");
                     checkbox.name = "attachment";
                     checkbox.value = this._attachments[i].Identifier;
                     checkbox.id = this._attachments[i].Name;
-                    var checkboxLabel = document.createElement("label");
+                    checkbox.checked = this._selectedAttachmentIds.indexOf(this._attachments[i].Identifier) > -1 ? true : false;
                     checkboxLabel.htmlFor = checkbox.id;
                     checkboxLabel.innerHTML = checkbox.id + " (<strong>Size:</strong> " + (this._attachments[i].Length / 1000) + "kb)";
-                    div.appendChild(checkbox);
-                    div.appendChild(checkboxLabel);
-                    container.appendChild(div);
+                    container.appendChild(templateElement);
                 }
             },
 
@@ -411,6 +428,8 @@
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(',') + "&issueNumber=" + issueNumber,
                     contentType: "text/html",
                     success: function (response) {
+                        this._selectedAttachmentIds = [];
+                        this._selectAttachmentElement.innerText = "Attachments";
                     }.bind(this),
                     error: function () {
                         this._errorPopup();
@@ -420,33 +439,33 @@
 
             _showAttachmentsPopup: function (sender, e) {
                 e.preventDefault();
-                if (this._attachments.length == 0) {
-                    this._createNewIssue(this._summaryElement.value, this._typeElement.value, []);
-                } else {
-                    var template = document.querySelector('.attachmentPopupTemplate').content;
-                    var templateElement = window.top.document.importNode(template, true);
-                    var checkboxDiv = templateElement.querySelector(".checkboxes");
-                    this._renderAttachments(checkboxDiv);
-                    var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
-                        "New Jira Issue",
-                        templateElement,
-                        MarvalSoftware.UI.MessageBox.INFORMATION,
-                        [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
-                        MarvalSoftware.UI.MessageBox.Buttons.OK,
-                        400,
-                        MarvalSoftware.createDelegate(function (sender, e) {
-                            if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
-                                for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
-                                    var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
-                                    if (checkbox.checked) {
-                                        this._selectedAttachmentIds.push(parseInt(checkbox.value));
-                                    }
+                var template = document.querySelector('.attachmentPopupTemplate').content;
+                var templateElement = window.top.document.importNode(template, true);
+                var checkboxDiv = templateElement.querySelector(".attachmentCheckboxes");
+                this._renderAttachments(checkboxDiv);
+                var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
+                    "New Jira Issue",
+                    templateElement,
+                    MarvalSoftware.UI.MessageBox.INFORMATION,
+                    [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
+                    MarvalSoftware.UI.MessageBox.Buttons.OK,
+                    400,
+                    MarvalSoftware.createDelegate(function (sender, e) {
+                        if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
+                            for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
+                                var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
+                                var value = parseInt(checkbox.value, 10);
+                                if (checkbox.checked && this._selectedAttachmentIds.indexOf(value) < 0) {
+                                    this._selectedAttachmentIds.push(value);
+                                } else if (!checkbox.checked && this._selectedAttachmentIds.indexOf(value) > -1) {
+                                    var indexToRemove = this._selectedAttachmentIds.indexOf(value);
+                                    this._selectedAttachmentIds.splice(indexToRemove, 1);
                                 }
-                                this._createNewIssue(this._summaryElement.value, this._typeElement.value, this._selectedAttachmentIds);
                             }
-                        }, this)
-                    );
-                }
+                            this._selectAttachmentElement.innerText = this._selectedAttachmentIds.length > 0 ? "Attachments (" + this._selectedAttachmentIds.length + " selected)" : "Attachments";
+                        }
+                    }, this)
+                );
             },
 
             _popup: function () {
