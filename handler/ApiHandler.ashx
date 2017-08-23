@@ -259,7 +259,7 @@ public class ApiHandler : PluginHandler
                 issuetype = new
                 {
                     name = this.JiraType
-                },
+                }
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
@@ -324,7 +324,7 @@ public class ApiHandler : PluginHandler
         }
         else
         {
-            AddMsmNote(requestId,  "JIRA status update failed: all linked JIRA issues must be in the same status.");
+            AddMsmNote(requestId, "JIRA status update failed: all linked JIRA issues must be in the same status.");
         }
     }
 
