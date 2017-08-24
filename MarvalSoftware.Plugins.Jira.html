@@ -297,6 +297,7 @@
                     success: function (result) {
                         this._renderIssue(result);
                         this._summaryElement.value = "";
+                        this._createElement.disabled = true;
                     }.bind(this),
                     error: function () {
                         this._errorPopup();
