@@ -623,7 +623,8 @@
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
-                        this._pageCount = Math.ceil(result.total / this._pageLimit);
+                        var pageCount = Math.ceil(result.total / this._pageLimit);
+                        this._pageCount = pageCount > 0 ? pageCount : 1;
                         this._updatePageCount(this._pageCount);
                     }.bind(this),
                     error: function () {
