@@ -116,7 +116,7 @@
                 bottom: 10px;
                 left: 10px;
                 right: 10px;
-                height: 90px;
+                height: 65px;
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
@@ -168,6 +168,7 @@
                     font-size: 13px;
                     text-decoration: none;
                     color: #3B73AF;
+                    display: none;
                 }
 
         .attachmentHeader {
@@ -387,6 +388,11 @@
                 this._summaryElement = this._element.querySelector("input");
                 this._createElement = this._element.querySelector("button");
                 this._selectAttachmentElement = this._element.querySelector(".selectAttachments");
+                if (this._attachments.length > 0)
+                {
+                    this._selectAttachmentElement.style.display = "block";
+                    this._element.querySelector(".newIssue").style.height = "90px";
+                }
                 eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
@@ -423,7 +429,7 @@
 
             _appendAttachments: function (attachmentIds, issueNumber) {
                 $.ajax({
-                    type: "GET",
+                    type: "POST",
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(',') + "&issueNumber=" + issueNumber,
                     contentType: "text/html",
                     success: function (response) {
