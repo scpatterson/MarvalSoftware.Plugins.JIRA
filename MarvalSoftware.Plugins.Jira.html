@@ -347,6 +347,7 @@
                         }
                     }.bind(this),
                     error: function () {
+                        this._createElement.disabled = false;
                         this._errorPopup();
                     }.bind(this)
                 });
@@ -597,6 +598,7 @@
 
             _createElement_click: function (sender, e) {
                 this._createNewIssue(this._summaryElement.value, this._typeElement.value);
+                this._createElement.disabled = true;
                 e.preventDefault();
             }
         });
