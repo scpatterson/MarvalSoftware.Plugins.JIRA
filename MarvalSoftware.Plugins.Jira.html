@@ -139,7 +139,7 @@
                     margin-left: 105px;
                 }
 
-                    .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper > input[type=text] {
+                    .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper > input {
                         box-sizing: border-box;
                         padding: 2px;
                         height: 22px;
@@ -426,7 +426,7 @@
                 this._issuesElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
                 this._typeElement = this._element.querySelector("select");
-                this._summaryElement = this._element.querySelectorAll("input[type=text]")[0];
+                this._summaryElement = this._element.querySelector(".issueSummaryWrapper > input");
                 this._createElement = this._element.querySelector("button");
                 this._selectAttachmentElement = this._element.querySelector(".selectAttachments");
                 this._contactCheckbox = this._element.querySelector(".issueOptions input");
