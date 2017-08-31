@@ -96,12 +96,12 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
-<<<<<<< HEAD
     private string JiraReporter { get; set; }
 
-=======
     private string AttachmentIds { get; set; }
->>>>>>> e78d4e0d6573e8bd06ed245b0e2686c9fdfea3dc
+
+    private string MSMContactEmail { get; set; }
+
     //fields
     private int MsmRequestNo;
 
@@ -131,11 +131,9 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
-<<<<<<< HEAD
         JiraReporter = httpRequest.Params["reporter"] ?? string.Empty;
-=======
         AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
->>>>>>> e78d4e0d6573e8bd06ed245b0e2686c9fdfea3dc
+        MSMContactEmail = httpRequest.Params["contactEmail"] ?? string.Empty;
     }
 
     /// <summary>
@@ -170,12 +168,10 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-<<<<<<< HEAD
             case "GetJiraUsers":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username=."));
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username={0}", this.MSMContactEmail));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
-=======
             case "SendAttachments":
                 if (!String.IsNullOrEmpty(AttachmentIds))
                 {
@@ -201,7 +197,6 @@ public class ApiHandler : PluginHandler
         for (int i = 0; i < attachmentIds.Length; i++)
         {
             attachments.Add(attachmentFacade.ViewAnAttachment(attachmentIds[i]));
->>>>>>> e78d4e0d6573e8bd06ed245b0e2686c9fdfea3dc
         }
         return attachments;
     }
