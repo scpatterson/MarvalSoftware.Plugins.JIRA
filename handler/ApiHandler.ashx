@@ -96,7 +96,12 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
+    private string JiraReporter { get; set; }
+
     private string AttachmentIds { get; set; }
+
+    private string MSMContactEmail { get; set; }
+
     //fields
     private int MsmRequestNo;
 
@@ -126,7 +131,9 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
+        JiraReporter = httpRequest.Params["reporter"] ?? string.Empty;
         AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
+        MSMContactEmail = httpRequest.Params["contactEmail"] ?? string.Empty;
     }
 
     /// <summary>
@@ -160,6 +167,10 @@ public class ApiHandler : PluginHandler
                 break;
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
+                break;
+            case "GetJiraUsers":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username={0}", this.MSMContactEmail));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
             case "SendAttachments":
                 if (!String.IsNullOrEmpty(AttachmentIds))
@@ -262,6 +273,12 @@ public class ApiHandler : PluginHandler
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
+
+        if (!this.JiraReporter.Equals("null")) {
+            dynamic reporter = new JObject();
+            reporter.name = this.JiraReporter;
+            jobject.fields["reporter"] = reporter;
+        }
 
         var httpWebRequest = BuildRequest(this.BaseUrl + "issue/", jobject.ToString(), "POST");
         return JObject.Parse(ProcessRequest(httpWebRequest, this.JiraCredentials));
