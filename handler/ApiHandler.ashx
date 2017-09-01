@@ -10,7 +10,8 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using MarvalSoftware.UI.WebUI.ServiceDesk.RFP.Plugins;
-
+using MarvalSoftware.ServiceDesk.Facade;
+using MarvalSoftware.DataTransferObjects;
 /// <summary>
 /// ApiHandler
 /// </summary>
@@ -95,6 +96,7 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
+<<<<<<< HEAD
     private string JiraProject { get; set; }
 
     private string JiraProjectList { get; set; }
@@ -102,6 +104,13 @@ public class ApiHandler : PluginHandler
     private string PageNo { get; set; }
 
     private string PageLimit { get; set; }
+=======
+    private string JiraReporter { get; set; }
+
+    private string AttachmentIds { get; set; }
+
+    private string MSMContactEmail { get; set; }
+>>>>>>> 8440a060f1929ebc778786b71f0caaa82adfee89
 
     //fields
     private int MsmRequestNo;
@@ -132,10 +141,16 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
+<<<<<<< HEAD
         JiraProject = httpRequest.Params["project"] ?? string.Empty;
         JiraProjectList = httpRequest.Params["projectList"] ?? string.Empty;
         PageNo = httpRequest.Params["page"] ?? string.Empty;
         PageLimit = httpRequest.Params["pageLimit"] ?? string.Empty;
+=======
+        JiraReporter = httpRequest.Params["reporter"] ?? string.Empty;
+        AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
+        MSMContactEmail = httpRequest.Params["contactEmail"] ?? string.Empty;
+>>>>>>> 8440a060f1929ebc778786b71f0caaa82adfee89
     }
 
     /// <summary>
@@ -170,6 +185,7 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
+<<<<<<< HEAD
             case "PopulateIssueTypes":
                 if (JiraProject.Equals("")) {
                     JiraProject = ProjectName;
@@ -192,9 +208,90 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
 
+=======
+            case "GetJiraUsers":
+                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username={0}", this.MSMContactEmail));
+                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+                break;
+            case "SendAttachments":
+                if (!String.IsNullOrEmpty(AttachmentIds))
+                {
+                    int[] attachmentNumIds = Array.ConvertAll<string, int>(AttachmentIds.Split(','), Convert.ToInt32);
+                    List<AttachmentViewInfo> att = GetAttachmentDTOs(attachmentNumIds);
+                    string attachmentResult = PostAttachments(att, JiraIssueNo);
+                    context.Response.Write(attachmentResult);
+                }
+                break;
+>>>>>>> 8440a060f1929ebc778786b71f0caaa82adfee89
         }
 
 
+    }
+
+    /// <summary>
+    /// Gets attachment DTOs from array of attachment Ids
+    /// </summary>
+    /// <param name="attachmentIds"></param>
+    /// <returns>A list of attachment DTOs</returns>
+    public List<AttachmentViewInfo> GetAttachmentDTOs(int[] attachmentIds) {
+        List<AttachmentViewInfo> attachments = new List<AttachmentViewInfo>();
+        var attachmentFacade = new RequestManagementFacade();
+        for (int i = 0; i < attachmentIds.Length; i++)
+        {
+            attachments.Add(attachmentFacade.ViewAnAttachment(attachmentIds[i]));
+        }
+        return attachments;
+    }
+
+    /// <summary>
+    /// Link attachments to specified Jira issue.
+    /// </summary>
+    /// <param name="attachments"></param>
+    /// <param name="issueKey"></param>
+    /// <returns>The result of attempting to post the attachment data.</returns>
+    public string PostAttachments(List<AttachmentViewInfo> attachments, string issueKey) {
+        var boundary = string.Format("----------{0:N}", Guid.NewGuid());
+        var content = new MemoryStream();
+        var writer = new StreamWriter(content);
+        var result = HttpStatusCode.OK.ToString();
+
+        foreach (var attachment in attachments)
+        {
+            var data = attachment.Content;
+            writer.WriteLine("--{0}", boundary);
+            writer.WriteLine("Content-Disposition: form-data; name=\"file\"; filename=\"{0}\"", attachment.Name);
+            writer.WriteLine("Content-Type: " + attachment.ContentType);
+            writer.WriteLine();
+            writer.Flush();
+            content.Write(data, 0, data.Length);
+            writer.WriteLine();
+        }
+        writer.WriteLine("--" + boundary + "--");
+        writer.Flush();
+        content.Seek(0, SeekOrigin.Begin);
+
+        HttpWebResponse response = null;
+        HttpWebRequest request = WebRequest.Create(new UriBuilder(this.BaseUrl + "issue/" + issueKey + "/attachments").Uri) as HttpWebRequest;
+        request.Method = "POST";
+        request.ContentType = string.Format("multipart/form-data; boundary={0}", boundary);
+        request.Headers.Add("Authorization", "Basic " + this.JiraCredentials);
+        request.Headers.Add("X-Atlassian-Token", "nocheck");
+        request.KeepAlive = true;
+        request.ContentLength = content.Length;
+
+        using (Stream requestStream = request.GetRequestStream())
+        {
+            content.CopyTo(requestStream);
+        }
+
+        using (response = request.GetResponse() as HttpWebResponse)
+        {
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                result = response.StatusCode.ToString();
+            }
+        }
+        return result;
     }
 
     /// <summary>
@@ -218,6 +315,12 @@ public class ApiHandler : PluginHandler
             }
         });
         jobject.fields[this.CustomFieldId.ToString()] = this.MsmRequestNo;
+
+        if (!this.JiraReporter.Equals("null")) {
+            dynamic reporter = new JObject();
+            reporter.name = this.JiraReporter;
+            jobject.fields["reporter"] = reporter;
+        }
 
         var httpWebRequest = BuildRequest(this.BaseUrl + "issue/", jobject.ToString(), "POST");
         return JObject.Parse(ProcessRequest(httpWebRequest, this.JiraCredentials));
@@ -336,7 +439,6 @@ public class ApiHandler : PluginHandler
             return false;
         }
     }
-
 
     /// <summary>
     /// Check and return missing plugin settings

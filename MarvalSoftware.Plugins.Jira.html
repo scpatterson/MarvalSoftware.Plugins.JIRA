@@ -145,14 +145,14 @@
                     bottom:0px;
                 }
 
-                .MarvalSoftware-Jira > .newIssue > .summaryDiv {
+                .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper {
                     position: absolute;
                     left: 110px;
                     right: 90px;
                     bottom: 0px;
                 }
 
-                    .MarvalSoftware-Jira > .newIssue > .summaryDiv > input {
+                    .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper > input {
                         box-sizing: border-box;
                         padding: 2px;
                         height: 22px;
@@ -210,6 +210,49 @@
                             max-width: 100px;
                             min-width: 100px;
                         }
+                .MarvalSoftware-Jira > .newIssue > .issueOptions {
+                    position: absolute;
+                    bottom: 0px;
+                    left: 0px;
+                }
+
+                    .MarvalSoftware-Jira > .newIssue > .issueOptions > a {
+                        vertical-align: middle;
+                        font-size: 13px;
+                        text-decoration: none;
+                        color: #3B73AF;
+                        margin-right: 10px;
+                    }
+
+                    .MarvalSoftware-Jira > .newIssue > .issueOptions > label {
+                        vertical-align: middle;
+                        margin-bottom: 2px;
+                        color: #9b9da0;
+                    }
+
+                    .MarvalSoftware-Jira > .newIssue > .issueOptions > input {
+                        vertical-align: middle;
+                    }
+
+        .attachmentHeader {
+            font-size: 13px;
+        }
+
+        .attachmentCheckboxes {
+            height: 200px;
+            overflow: auto;
+            padding-top: 10px;
+        }
+
+            .attachmentCheckboxes div {
+                margin-top: 10px;
+            }
+
+                .attachmentCheckboxes div input {
+                    margin-right: 5px;
+                    vertical-align: middle;
+                }
+
     </style>
     <div class="MarvalSoftware-Jira">
         <div class="header">
@@ -228,10 +271,15 @@
             <div class="typeLoading">
                 <select class="IssueTypeSelect"></select>
             </div>
-            <div class="summaryDiv">
-                <input type="text" placeholder="Summary" class="text" maxlength="255" />
+            <div class="issueSummaryWrapper">
+                <input type="text" placeholder="Summary" class="text" maxlength="255" disabled/>
             </div>
-            <button class="createButton">Create</button>
+            <button>Create</button>
+            <div class="issueOptions">
+                <a href="javascript:void(0);" class="selectAttachments">Attachments</a>
+                <input type="checkbox" disabled />
+                <label> MSM Contact as Reporter</label>
+            </div>
             <div class="paging">
                 <button class="previousPage"><</button>
                 <p class="pagingInfo">1/1</p>
@@ -281,6 +329,16 @@
         </div>
     </div>
 </template>
+<template class="attachmentPopupTemplate">
+    <p class="attachmentHeader">Select Request Attachment(s):</p>
+    <div class="attachmentCheckboxes"></div>
+</template>
+<template class="attachmentTemplate">
+    <div>
+        <input type="checkbox" class="attachmentCheckbox"/>
+        <label class="attachmentLabel"></label>
+    </div>
+</template>
 <script>
     (function () {
 
@@ -307,10 +365,23 @@
             _currentPage: 0,
             _pageCount: null,
             _pageInfoElement: null,
+            _contactEmail: null,
+            _contactUsername: null,
+            _contactCheckbox: null,
+            _attachments: null,
+            _selectedAttachmentIds: null,
+            _selectAttachmentElement: null,
+            _issueOptionsElement: null,
+            _reporterCheckboxLabel: null,
+            _reporterCheckboxElement: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
+                this._contactEmail = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getContactPreferredEmail();
                 this._requestDescription = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getDescription();
+                this._attachments = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getAttachments();
+
+                this._selectedAttachmentIds = [];
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
                 }
@@ -333,25 +404,69 @@
                 }
             },
 
-            _createNewIssue: function (issueSummary, issueType) {
-                if (this._typeElement.selectedIndex === -1) {
-                    this._errorPopup();
-                } else {
-                    var selectedProject = this._projectSelectElement.options[this._projectSelectElement.selectedIndex].value;
+            _renderIssues: function () {
+                if (this._renderIssuesRequest) {
+                    this._renderIssuesRequest.abort();
+                    this._renderIssuesRequest = null;
+                }
+                this._renderIssuesRequest = $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetJiraIssues&requestNumber=" + this._requestNumber,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._issuesElement.style.backgroundImage = "";
+                        result.issues.forEach(this._renderIssue.bind(this));
+                    }.bind(this),
+                    error: function () {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _getContactUsername: function () {
+                if (this._contactEmail != null) {
                     $.ajax({
-                        type: "POST",
-                        url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" + issueSummary + "&issueType=" + issueType + "&project=" + selectedProject,
+                        type: "GET",
+                        url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetJiraUsers&contactEmail=" + this._contactEmail,
                         contentType: "application/json; charset=utf-8",
                         dataType: "json",
                         success: function (result) {
-                            this._renderIssue(result);
-                            this._summaryElement.value = "";
+                            if (result.length > 0) {
+                                this._contactUsername = result[0]["name"];
+                                this._reporterCheckboxElement.disabled = false;
+                                this._reporterCheckboxLabel.style.color = "black";
+                                this._reporterCheckboxLabel.innerText = this._reporterCheckboxLabel.innerText + " (" + this._contactUsername + ")";
+                            }
                         }.bind(this),
                         error: function () {
                             this._errorPopup();
                         }.bind(this)
                     });
                 }
+            },
+
+            _createNewIssue: function (issueSummary, issueType) {
+                var selectedProject = this._projectSelectElement.options[this._projectSelectElement.selectedIndex].value;
+                $.ajax({
+                    type: "POST",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" +
+                    issueSummary + "&issueType=" + issueType + "&reporter=" + (this._contactCheckbox.checked ? this._contactUsername : null) + "&project=" + selectedProject,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        this._renderIssue(result);
+                        this._summaryElement.value = "";
+                        this._contactCheckbox.checked = false;
+                        if (this._selectedAttachmentIds.length != 0) {
+                            this._appendAttachments(this._selectedAttachmentIds, result.key);
+                        }
+                    }.bind(this),
+                    error: function () {
+                        this._createElement.disabled = false;
+                        this._errorPopup();
+                    }.bind(this)
+                });
             },
 
             _unlinkIssue: function (issueNumber) {
@@ -386,18 +501,23 @@
                 this._issuesElement = this._element.querySelector(".issues");
                 this._issuesElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 eventManager.addHandler(this._issuesElement, "click", this._issuesElement_click, this);
-                this._typeElement = this._element.querySelector(".newIssue > .typeLoading > select");
+                this._typeElement = this._element.querySelector("select");
                 this._typeLoadingElement = this._element.querySelector(".newIssue > .typeLoading");
                 this._typeLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
-                this._summaryElement = this._element.querySelector("input");
-                this._createElement = this._element.querySelector(".createButton");
+                this._summaryElement = this._element.querySelector(".issueSummaryWrapper > input");
+                this._createElement = this._element.querySelector("button");
                 this._projectSelectElement = this._element.querySelector(".MarvalSoftware-Jira > .newIssue > .projects > .projectLoading > select");
                 this._projectLoadingElement = this._element.querySelector(".MarvalSoftware-Jira > .newIssue > .projects > .projectLoading");
                 this._projectLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 this._previousPageElement = this._element.querySelector(".previousPage");
                 this._nextPageElement = this._element.querySelector(".nextPage");
                 this._pageInfoElement = this._element.querySelector(".paging > .pagingInfo");
-                eventManager.addHandler(this._projectSelectElement, "change", this._populateIssueTypes, this);    
+                this._selectAttachmentElement = this._element.querySelector(".selectAttachments");
+                this._contactCheckbox = this._element.querySelector(".issueOptions input");
+                this._issueOptionsElement = this._element.querySelector(".issueOptions");
+                this._reporterCheckboxLabel = this._issueOptionsElement.querySelector("label");
+                this._reporterCheckboxElement = this._issueOptionsElement.querySelector("input");
+                eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._previousPageElement, "click", this._previousPageElement_click, this);
                 eventManager.addHandler(this._nextPageElement, "click", this._nextPageElement_click, this);
@@ -469,7 +589,7 @@
                 });
             },
             
-            _handleInput() {
+            _handleInput: function() {
                 this._summaryElement.value.length > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
             },
 
@@ -479,6 +599,68 @@
                     this._summaryElement.disabled = false;
                     this._summaryElement.select();
                 }
+            },
+
+            _renderAttachments: function (container) {
+                for (var i = 0; i < this._attachments.length; i++) {
+                    var template = document.querySelector(".attachmentTemplate").content;
+                    var templateElement = window.top.document.importNode(template, true);
+                    var checkboxLabel = templateElement.querySelector(".attachmentLabel");
+                    var checkbox = templateElement.querySelector(".attachmentCheckbox");
+                    checkbox.name = "attachment";
+                    checkbox.value = this._attachments[i].Identifier;
+                    checkbox.id = this._attachments[i].Name;
+                    checkbox.checked = this._selectedAttachmentIds.indexOf(this._attachments[i].Identifier) > -1 ? true : false;
+                    checkboxLabel.htmlFor = checkbox.id;
+                    checkboxLabel.innerHTML = checkbox.id + " (<strong>Size:</strong> " + (this._attachments[i].Length / 1000) + "kb)";
+                    container.appendChild(templateElement);
+                }
+            },
+
+            _appendAttachments: function (attachmentIds, issueNumber) {
+                $.ajax({
+                    type: "POST",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=SendAttachments&attachments=" + attachmentIds.join(',') + "&issueNumber=" + issueNumber,
+                    contentType: "text/html",
+                    success: function (response) {
+                        this._selectedAttachmentIds = [];
+                        this._selectAttachmentElement.innerText = "Attachments";
+                    }.bind(this),
+                    error: function () {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+            },
+
+            _showAttachmentsPopup: function (sender, e) {
+                e.preventDefault();
+                var template = document.querySelector('.attachmentPopupTemplate').content;
+                var templateElement = window.top.document.importNode(template, true);
+                var checkboxDiv = templateElement.querySelector(".attachmentCheckboxes");
+                this._renderAttachments(checkboxDiv);
+                var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
+                    "New Jira Issue",
+                    templateElement,
+                    MarvalSoftware.UI.MessageBox.INFORMATION,
+                    [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
+                    MarvalSoftware.UI.MessageBox.Buttons.OK,
+                    400,
+                    MarvalSoftware.createDelegate(function (sender, e) {
+                        if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
+                            for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
+                                var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
+                                var value = parseInt(checkbox.value, 10);
+                                if (checkbox.checked && this._selectedAttachmentIds.indexOf(value) < 0) {
+                                    this._selectedAttachmentIds.push(value);
+                                } else if (!checkbox.checked && this._selectedAttachmentIds.indexOf(value) > -1) {
+                                    var indexToRemove = this._selectedAttachmentIds.indexOf(value);
+                                    this._selectedAttachmentIds.splice(indexToRemove, 1);
+                                }
+                            }
+                            this._selectAttachmentElement.innerText = this._selectedAttachmentIds.length > 0 ? "Attachments (" + this._selectedAttachmentIds.length + " selected)" : "Attachments";
+                        }
+                    }, this)
+                );
             },
 
             _popup: function () {
@@ -498,9 +680,13 @@
                     this._loadJiraProjectNames();
                     this._populateIssueTypes();
                     this._renderIssuesForCurrentPage();
+                    this._loadSummaryFromDescription();
                     this._setupPaging();
                 }
-
+                if (this._contactEmail != null) {
+                    this._contactUsername = this._getContactUsername();
+                }
+                
                 if (!this._pluginWindow.isVisible()) {
                     this._pluginWindow.centerToViewport();
                 }
@@ -607,6 +793,7 @@
 
             _createElement_click: function (sender, e) {
                 this._createNewIssue(this._summaryElement.value, this._typeElement.value);
+                this._createElement.disabled = true;
                 e.preventDefault();
             },
 
