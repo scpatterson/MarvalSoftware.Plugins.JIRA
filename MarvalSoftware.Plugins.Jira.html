@@ -116,6 +116,7 @@
                 bottom: 10px;
                 left: 10px;
                 right: 10px;
+                height: 90px;
             }
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
@@ -125,58 +126,65 @@
 
                 .MarvalSoftware-Jira > .newIssue > select {
                     box-sizing: border-box;
+                    position: absolute;
+                    left: 0;
                     padding: 2px;
                     height: 22px;
                     max-width: 100px;
                     min-width: 100px;
                     width: 100px;
                     border: 1px solid #CCC;
-                    float: left;
                 }
 
                 .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper {
-                    margin-right: 85px;
-                    margin-left: 105px;
+                    position: absolute;
+                    left: 110px;
+                    right: 90px;
                 }
 
                     .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper > input {
                         box-sizing: border-box;
                         padding: 2px;
                         height: 22px;
-                        border: 1px solid #CCC;
                         width: 100%;
+                        border: 1px solid #CCC;
                     }
 
                 .MarvalSoftware-Jira > .newIssue > button {
                     box-sizing: border-box;
+                    position: absolute;
+                    right: 0;
                     padding: 2px;
                     height: 22px;
                     width: 80px;
                     border: 1px solid #CCC;
                     border-radius: 2px;
                     background: #F5F5F5;
-                    float:right;
+                }
+
+                .MarvalSoftware-Jira > .newIssue > .issueOptions {
+                    position: absolute;
+                    bottom: 0px;
+                    left: 0px;
                 }
 
                     .MarvalSoftware-Jira > .newIssue > .issueOptions > a {
-                        display: none;
                         vertical-align: middle;
                         font-size: 13px;
                         text-decoration: none;
                         color: #3B73AF;
                         margin-right: 10px;
-                        margin-top: 10px;
                     }
 
                     .MarvalSoftware-Jira > .newIssue > .issueOptions > label {
-                        display: none;
                         vertical-align: middle;
-                        margin-top: 10px;
+                        margin-bottom: 2px;
+                        color: #9b9da0;
                     }
 
-                        .MarvalSoftware-Jira > .newIssue > .issueOptions > label > input {
-                            vertical-align: middle;
-                        }
+                    .MarvalSoftware-Jira > .newIssue > .issueOptions > input {
+                        vertical-align: middle;
+                    }
 
         .attachmentHeader {
             font-size: 13px;
@@ -212,13 +220,14 @@
                 <option value="Task">Task</option>
                 <option value="Bug">Bug</option>
             </select>
-            <button>Create</button>
             <div class="issueSummaryWrapper">
                 <input type="text" placeholder="Summary" class="text" maxlength="255" disabled/>
             </div>
+            <button>Create</button>
             <div class="issueOptions">
                 <a href="javascript:void(0);" class="selectAttachments">Attachments</a>
-                <label>MSM Contact as Reporter <input type="checkbox" /></label>
+                <input type="checkbox" disabled />
+                <label> MSM Contact as Reporter</label>
             </div>
         </div>
     </div>
@@ -299,6 +308,7 @@
             _selectAttachmentElement: null,
             _issueOptionsElement: null,
             _reporterCheckboxLabel: null,
+            _reporterCheckboxElement: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
@@ -309,9 +319,6 @@
                 this._selectedAttachmentIds = [];
                 if (this._requestNumber) {
                     this._setUpQuickMenu();
-                    if (this._contactEmail != null) {
-                        this._getContactUsername();
-                    }
                 }
             },
 
@@ -362,6 +369,9 @@
                         success: function (result) {
                             if (result.length > 0) {
                                 this._contactUsername = result[0]["name"];
+                                this._reporterCheckboxElement.disabled = false;
+                                this._reporterCheckboxLabel.style.color = "black";
+                                this._reporterCheckboxLabel.innerText = this._reporterCheckboxLabel.innerText + " (" + this._contactUsername + ")";
                             }
                         }.bind(this),
                         error: function () {
@@ -432,10 +442,7 @@
                 this._contactCheckbox = this._element.querySelector(".issueOptions input");
                 this._issueOptionsElement = this._element.querySelector(".issueOptions");
                 this._reporterCheckboxLabel = this._issueOptionsElement.querySelector("label");
-
-                this._reporterCheckboxLabel.style.display = this._contactUsername != null ? "inline-block" : this._reporterCheckboxLabel.style.display;
-                this._selectAttachmentElement.style.display = this._attachments.length > 0 ? "inline-block" : this._selectAttachmentElement.style.display;
-
+                this._reporterCheckboxElement = this._issueOptionsElement.querySelector("input");
                 eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
@@ -530,6 +537,9 @@
                         bodyElement: this
                     });
                     this._renderElement();
+                    if (this._contactEmail != null) {
+                        this._contactUsername = this._getContactUsername();
+                    }
                     this._renderIssues();
                     this._loadSummaryFromDescription();
                 } 
