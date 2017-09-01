@@ -96,7 +96,6 @@ public class ApiHandler : PluginHandler
 
     private string JiraType { get; set; }
 
-<<<<<<< HEAD
     private string JiraProject { get; set; }
 
     private string JiraProjectList { get; set; }
@@ -104,13 +103,12 @@ public class ApiHandler : PluginHandler
     private string PageNo { get; set; }
 
     private string PageLimit { get; set; }
-=======
+    
     private string JiraReporter { get; set; }
 
     private string AttachmentIds { get; set; }
 
     private string MSMContactEmail { get; set; }
->>>>>>> 8440a060f1929ebc778786b71f0caaa82adfee89
 
     //fields
     private int MsmRequestNo;
@@ -141,16 +139,13 @@ public class ApiHandler : PluginHandler
         JiraIssueNo = httpRequest.Params["issueNumber"] ?? string.Empty;
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
-<<<<<<< HEAD
         JiraProject = httpRequest.Params["project"] ?? string.Empty;
         JiraProjectList = httpRequest.Params["projectList"] ?? string.Empty;
         PageNo = httpRequest.Params["page"] ?? string.Empty;
         PageLimit = httpRequest.Params["pageLimit"] ?? string.Empty;
-=======
         JiraReporter = httpRequest.Params["reporter"] ?? string.Empty;
         AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
         MSMContactEmail = httpRequest.Params["contactEmail"] ?? string.Empty;
->>>>>>> 8440a060f1929ebc778786b71f0caaa82adfee89
     }
 
     /// <summary>
@@ -185,7 +180,6 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-<<<<<<< HEAD
             case "PopulateIssueTypes":
                 if (JiraProject.Equals("")) {
                     JiraProject = ProjectName;
@@ -208,7 +202,6 @@ public class ApiHandler : PluginHandler
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
 
-=======
             case "GetJiraUsers":
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username={0}", this.MSMContactEmail));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
@@ -222,7 +215,6 @@ public class ApiHandler : PluginHandler
                     context.Response.Write(attachmentResult);
                 }
                 break;
->>>>>>> 8440a060f1929ebc778786b71f0caaa82adfee89
         }
 
 
