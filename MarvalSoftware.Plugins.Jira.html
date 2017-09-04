@@ -225,7 +225,7 @@
             </div>
             <button>Create</button>
             <div class="issueOptions">
-                <a href="javascript:void(0);" class="selectAttachments">Attachments</a>
+                <a href="javascript:void(0);" class="selectAttachments"></a>
                 <input type="checkbox" disabled />
                 <label> MSM Contact as Reporter</label>
             </div>
@@ -439,6 +439,7 @@
                 this._summaryElement = this._element.querySelector(".issueSummaryWrapper > input");
                 this._createElement = this._element.querySelector("button");
                 this._selectAttachmentElement = this._element.querySelector(".selectAttachments");
+                this._setSelectedAttachmentCount(0);
                 this._contactCheckbox = this._element.querySelector(".issueOptions input");
                 this._issueOptionsElement = this._element.querySelector(".issueOptions");
                 this._reporterCheckboxLabel = this._issueOptionsElement.querySelector("label");
@@ -484,12 +485,17 @@
                     contentType: "text/html",
                     success: function (response) {
                         this._selectedAttachmentIds = [];
-                        this._selectAttachmentElement.innerText = "Attachments";
+                        this._setSelectedAttachmentCount(0);
                     }.bind(this),
                     error: function () {
                         this._errorPopup();
                     }.bind(this)
                 });
+            },
+
+            _setSelectedAttachmentCount : function(count)
+            {
+                this._selectAttachmentElement.innerText = "Attachments (" + count + "/" + this._attachments.length + " selected)";
             },
 
             _showAttachmentsPopup: function (sender, e) {
@@ -517,7 +523,7 @@
                                     this._selectedAttachmentIds.splice(indexToRemove, 1);
                                 }
                             }
-                            this._selectAttachmentElement.innerText = this._selectedAttachmentIds.length > 0 ? "Attachments (" + this._selectedAttachmentIds.length + " selected)" : "Attachments";
+                            this._setSelectedAttachmentCount(this._selectedAttachmentIds.length);
                         }
                     }, this)
                 );
