@@ -187,21 +187,10 @@ public class ApiHandler : PluginHandler
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project/{0}", JiraProject));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
-            case "GetTotalIssueCountForRequest":
-                //Using these query parameters causes no issue data to be returned, only basic information such as total number of issues, reducing the size 
-                //of the request dramatically (from approx 165kb for 123 issues down to 400 bytes)
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}&fields=*none&maxResults=0", this.CustomFieldName, this.MsmRequestNo));
-                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
-                break;
-            case "GetPagedIssues":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("search?jql='{0}'={1}&startAt={2}&maxResults={3}", this.CustomFieldName, this.MsmRequestNo, this.PageNo, this.PageLimit));
-                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
-                break;
             case "FetchJiraProjectNames":
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
                 break;
-
             case "GetJiraUsers":
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username={0}", this.MSMContactEmail));
                 context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
