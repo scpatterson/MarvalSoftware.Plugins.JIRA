@@ -40,7 +40,7 @@
             .MarvalSoftware-Jira > .issues {
                 position: absolute;
                 top: 50px;
-                bottom: 130px;
+                bottom: 110px;
                 left: 10px;
                 right: 10px;
                 overflow: auto;
@@ -121,7 +121,7 @@
 
                 .MarvalSoftware-Jira > .newIssue > h1 {
                     line-height: 30px;
-                    bottom: 80px;
+                    bottom: 60px;
                     position: absolute;
                 }
 
@@ -176,25 +176,6 @@
                     bottom: 28px;
                 }
 
-                .MarvalSoftware-Jira > .newIssue > .projects {
-                    position: absolute;
-                    left: 0px;
-                    right: 10px;
-                    bottom: 55px;
-                }
-
-                    .MarvalSoftware-Jira > .newIssue >  .projects > .projectLoading {
-                        background-repeat: no-repeat;
-                        float: left;
-                        width: 20px;
-                        height: 20px;
-                    }
-
-                        .MarvalSoftware-Jira > .newIssue > .projects > .projectLoading > select {
-                            max-width: 100px;
-                            min-width: 100px;
-                        }
-
                 .MarvalSoftware-Jira > .newIssue > .issueOptions {
                     position: absolute;
                     bottom: 0px;
@@ -247,11 +228,6 @@
         <div class="issues">
         </div>
         <div class="newIssue">
-            <div class="projects">
-                <div class="projectLoading">
-                    <select class="projectSelect"></select>
-                </div>
-            </div>
             <h1>New Issue</h1>
             <div class="issueTypes">
                 <div class="typeLoading">
@@ -337,11 +313,8 @@
             _typeElement: null,
             _summaryElement: null,
             _createElement: null,
-            _projectSelectElement: null,
             _renderIssuesRequest: null,
-            _projectLoadingElement: null,
             _typeLoadingElement: null,
-            _pageInfoElement: null,
             _contactEmail: null,
             _contactUsername: null,
             _contactCheckbox: null,
@@ -423,12 +396,11 @@
                 }
             },
 
-            _createNewIssue: function (issueSummary, issueType) {
-                var selectedProject = this._projectSelectElement.options[this._projectSelectElement.selectedIndex].value;
+            _createNewIssue: function (issueSummary, issueType, project) {
                 $.ajax({
                     type: "POST",
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=CreateJiraIssue&requestNumber=" + this._requestNumber + "&issueSummary=" +
-                    issueSummary + "&issueType=" + issueType + "&reporter=" + (this._contactCheckbox.checked ? this._contactUsername : null) + "&project=" + selectedProject,
+                    issueSummary + "&issueType=" + issueType + "&reporter=" + (this._contactCheckbox.checked ? this._contactUsername : null) + "&project=" + project,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
@@ -483,36 +455,33 @@
                 this._typeLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 this._summaryElement = this._element.querySelector(".issueSummaryWrapper > input");
                 this._createElement = this._element.querySelector("button");
-                this._projectSelectElement = this._element.querySelector(".MarvalSoftware-Jira > .newIssue > .projects > .projectLoading > select");
-                this._projectLoadingElement = this._element.querySelector(".MarvalSoftware-Jira > .newIssue > .projects > .projectLoading");
-                this._projectLoadingElement.style.backgroundImage = 'url("' + this._getPluginPath() + '/img/spinner.gif")';
                 this._selectAttachmentElement = this._element.querySelector(".selectAttachments");
                 this._contactCheckbox = this._element.querySelector(".issueOptions input");
                 this._issueOptionsElement = this._element.querySelector(".issueOptions");
                 this._reporterCheckboxLabel = this._issueOptionsElement.querySelector("label");
                 this._reporterCheckboxElement = this._issueOptionsElement.querySelector("input");
-                eventManager.addHandler(this._projectSelectElement, "change", this._populateIssueTypes, this); 
                 eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
-                this._projectSelectElement.style.display = 'none';
                 this._typeElement.style.display = 'none';
                 this.appendChild(this._element);
             },
 
-            _loadJiraProjectNames: function () {
+            _loadIssueTypes: function () {
                 $.ajax({
                     type: "GET",
                     url: this._getPluginPath() + "handler/ApiHandler.ashx?action=FetchJiraProjectNames",
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
-                        this._projectLoadingElement.style.backgroundImage = "";
-                        this._projectSelectElement.style.display = 'block';
+                        this._typeElement.style.backgroundImage = "";
+                        this._typeElement.style.display = 'block';
                         for (var i = 0; i < result.length; i++) {
                             var option = document.createElement("option");
-                            option.text = result[i].key;
-                            this._projectSelectElement.add(option);
+                            var optionGroup = document.createElement("optgroup");
+                            optionGroup.label = result[i].key;
+                            this._typeElement.add(optionGroup);
+                            this._getProjectIssueTypes(result[i].key, optionGroup);
                         }
                     }.bind(this),
                     error: function (error) {
@@ -521,32 +490,19 @@
                 });
             },
 
-            _clearIssueTypes: function () {
-                while (this._typeElement.firstChild) {
-                    this._typeElement.removeChild(this._typeElement.firstChild);
-                }
-            },
-
-            _populateIssueTypes: function (event) {
-                var selectedProject = "";
-                if (event != null) {
-                    selectedProject = event.options[event.selectedIndex].value;
-                }
+            _getProjectIssueTypes: function (project, optionGroup)
+            {
                 $.ajax({
                     type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=PopulateIssueTypes&project=" + selectedProject,
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetProjectIssueTypes&project=" + project,
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
-                        this._typeLoadingElement.style.backgroundImage = "";
-                        this._typeElement.style.display = 'block';
-                        this._clearIssueTypes();
-                        var projectIssueTypes = result.issueTypes;
-                        for (var i = 0; i < projectIssueTypes.length; i++) {
-                            if (!projectIssueTypes[i].subtask && projectIssueTypes[i].name !== "Epic") {
+                        for (var i = 0; i < result.issueTypes.length; i++) {
+                            if (!result.issueTypes[i].subtask && result.issueTypes[i].name !== "Epic") {
                                 var option = document.createElement("option");
-                                option.text = projectIssueTypes[i].name;
-                                this._typeElement.add(option);
+                                option.text = result.issueTypes[i].name;
+                                optionGroup.appendChild(option);
                             }
                         }
                     }.bind(this),
@@ -554,8 +510,9 @@
                         this._errorPopup();
                     }.bind(this)
                 });
+
             },
-            
+
             _handleInput: function() {
                 this._summaryElement.value.length > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
             },
@@ -644,8 +601,7 @@
                         bodyElement: this
                     });
                     this._renderElement();
-                    this._loadJiraProjectNames();
-                    this._populateIssueTypes();
+                    this._loadIssueTypes();
                     this._loadSummaryFromDescription();
                     this._renderIssues();
                     if (this._contactEmail != null) {
@@ -757,10 +713,10 @@
             },
 
             _createElement_click: function (sender, e) {
-                this._createNewIssue(this._summaryElement.value, this._typeElement.value);
+                this._createNewIssue(this._summaryElement.value, this._typeElement.value, this._typeElement.options[this._typeElement.selectedIndex].parentNode.label);
                 this._createElement.disabled = true;
                 e.preventDefault();
-            }
+            },
         });
     })();
 </script>

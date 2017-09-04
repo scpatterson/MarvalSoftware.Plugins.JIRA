@@ -180,7 +180,7 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-            case "PopulateIssueTypes":
+            case "GetProjectIssueTypes":
                 if (JiraProject.Equals("")) {
                     JiraProject = ProjectName;
                 }
