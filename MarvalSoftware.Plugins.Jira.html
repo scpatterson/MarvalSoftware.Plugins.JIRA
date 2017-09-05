@@ -141,16 +141,16 @@
                             box-sizing: border-box;
                             padding: 2px;
                             height: 22px;
-                            max-width: 100px;
-                            min-width: 100px;
-                            width: 100px;
+                            max-width: 110px;
+                            min-width: 110px;
+                            width: 110px;
                             border: 1px solid #CCC;
                             position: absolute;
                         }
 
                 .MarvalSoftware-Jira > .newIssue > .issueSummaryWrapper {
                     position: absolute;
-                    left: 110px;
+                    left: 120px;
                     right: 90px;
                     bottom: 28px;
                 }
@@ -231,13 +231,15 @@
             <h1>New Issue</h1>
             <div class="issueTypes">
                 <div class="typeLoading">
-                    <select class="IssueTypeSelect"></select>
+                    <select class="IssueTypeSelect">
+                        <option selected disabled value=""> -- Issue Type -- </option>
+                    </select>
                 </div>
             </div>
             <div class="issueSummaryWrapper">
-                <input type="text" placeholder="Summary" class="text" maxlength="255" disabled/>
+                <input type="text" placeholder="Summary" class="text" maxlength="255" />
             </div>
-            <button>Create</button>
+            <button disabled>Create</button>
             <div class="issueOptions">
                 <a href="javascript:void(0);" class="selectAttachments"></a>
                 <input type="checkbox" disabled />
@@ -465,6 +467,7 @@
                 eventManager.addHandler(this._selectAttachmentElement, "click", this._doStuff, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
+                eventManager.addHandler(this._typeElement, "change", this._typeElement_change, this);
                 this._typeElement.style.display = 'none';
                 this.appendChild(this._element);
             },
@@ -476,7 +479,6 @@
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
-                        //console.log(Object.keys(result));
                         console.log(result);
                     }.bind(this),
                     error: function (error) {
@@ -529,19 +531,15 @@
                         this._errorPopup();
                     }.bind(this)
                 });
-
             },
 
-            _handleInput: function() {
-                this._summaryElement.value.length > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
+            _handleInput: function () {
+                this._summaryElement.value.length > 0 && this._typeElement.selectedIndex > 0 ? this._createElement.disabled = false : this._createElement.disabled = true;
             },
 
             _loadSummaryFromDescription: function () {
                 this._summaryElement.value = this._requestDescription;
-                if (this._summaryElement.value.length > 0) {
-                    this._summaryElement.disabled = false;
-                    this._summaryElement.select();
-                }
+                this._summaryElement.select();
             },
 
             _renderAttachments: function (container) {
@@ -575,8 +573,7 @@
                 });
             },
 
-            _setSelectedAttachmentCount : function(count)
-            {
+            _setSelectedAttachmentCount : function(count){
                 this._selectAttachmentElement.innerText = "Attachments (" + count + "/" + this._attachments.length + " selected)";
             },
 
@@ -734,6 +731,10 @@
                 if (e.target.className == "unlink") {
                     this._unlinkIssue(e.target.dataset.issueNumber);
                 }
+            },
+
+            _typeElement_change: function (sender, e) {
+                this._createElement.disabled = !this._summaryElement.value.length > 0;
             },
 
             _createElement_click: function (sender, e) {
