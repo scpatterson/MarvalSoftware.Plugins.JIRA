@@ -12,6 +12,9 @@ using Newtonsoft.Json.Linq;
 using MarvalSoftware.UI.WebUI.ServiceDesk.RFP.Plugins;
 using MarvalSoftware.ServiceDesk.Facade;
 using MarvalSoftware.DataTransferObjects;
+using System.Threading.Tasks;
+using System.Linq;
+
 /// <summary>
 /// ApiHandler
 /// </summary>
@@ -103,7 +106,7 @@ public class ApiHandler : PluginHandler
     private string PageNo { get; set; }
 
     private string PageLimit { get; set; }
-    
+
     private string JiraReporter { get; set; }
 
     private string AttachmentIds { get; set; }
@@ -204,10 +207,62 @@ public class ApiHandler : PluginHandler
                     context.Response.Write(attachmentResult);
                 }
                 break;
+            case "DoAsyncStuff":
+                SortedDictionary<string, string[]> results = GetJIRAProjectIssueTypeMapping();
+                context.Response.Write(JsonConvert.SerializeObject(results));
+                break;
         }
 
 
     }
+
+    public SortedDictionary<string, string[]> GetJIRAProjectIssueTypeMapping()
+    {
+        HttpWebRequest httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
+        string response = ProcessRequest(httpWebRequest, this.JiraCredentials);
+        JArray projects = JArray.Parse(response);
+
+        SortedDictionary<string, string[]> projectIssueTypes = new SortedDictionary<string, string[]>();
+        List<Task<string>> issueTypeTasks = new List<Task<string>>();
+
+        foreach (JToken project in projects)
+        {
+            Task<string> task = GetProjectIssueTypesAsync(project["key"].ToString());
+            task.ConfigureAwait(false);
+            issueTypeTasks.Add(task);
+        }
+
+        Task.WaitAll(issueTypeTasks.ToArray());
+
+        foreach (Task<string> task in issueTypeTasks) {
+            var taskResult = JObject.Parse(task.Result);
+            var issueTypes = taskResult["issueTypes"];
+
+            string[] types = new string[issueTypes.Count()];
+            for (int i = 0; i < types.Length; i++) {
+                types[i] = issueTypes[i]["name"].ToString();
+            }
+            Array.Sort(types, (x,y) => String.Compare(x, y));
+            projectIssueTypes.Add(taskResult["key"].ToString(), types);
+        }
+
+        return projectIssueTypes;
+    }
+
+    public async Task<string> GetProjectIssueTypesAsync(string projectKey)
+    {
+        HttpWebRequest request = BuildRequest(this.BaseUrl + String.Format("project/{0}", projectKey));
+        request.Headers.Add("Authorization", "Basic " + this.JiraCredentials);
+
+        using (WebResponse response = await request.GetResponseAsync().ConfigureAwait(false))
+        {
+            using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+            {
+                return await reader.ReadToEndAsync();
+            }
+        }
+    }
+
 
     /// <summary>
     /// Gets attachment DTOs from array of attachment Ids

@@ -461,11 +461,29 @@
                 this._issueOptionsElement = this._element.querySelector(".issueOptions");
                 this._reporterCheckboxLabel = this._issueOptionsElement.querySelector("label");
                 this._reporterCheckboxElement = this._issueOptionsElement.querySelector("input");
-                eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
+                //eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
+                eventManager.addHandler(this._selectAttachmentElement, "click", this._doStuff, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
                 this._typeElement.style.display = 'none';
                 this.appendChild(this._element);
+            },
+
+            _doStuff: function () {
+                $.ajax({
+                    type: "GET",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=DoAsyncStuff",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        //console.log(Object.keys(result));
+                        console.log(result);
+                    }.bind(this),
+                    error: function (error) {
+                        this._errorPopup();
+                    }.bind(this)
+                });
+
             },
 
             _loadIssueTypes: function () {
