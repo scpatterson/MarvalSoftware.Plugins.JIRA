@@ -204,10 +204,13 @@
             font-size: 13px;
         }
 
+        .attachmentOptions {
+            margin-bottom: 5px;
+        }
+
         .attachmentCheckboxes {
             height: 200px;
             overflow: auto;
-            padding-top: 10px;
         }
 
             .attachmentCheckboxes div {
@@ -291,6 +294,12 @@
 </template>
 <template class="attachmentPopupTemplate">
     <p class="attachmentHeader">Select Request Attachment(s):</p>
+    <br />
+    <div class="attachmentOptions">
+        <a href="javascript:void(0)" class="selectAll">Select All</a>
+        <span> | </span>
+        <a href="javascript:void(0)" class="selectNone">Select None</a>
+    </div>
     <div class="attachmentCheckboxes"></div>
 </template>
 <template class="attachmentTemplate">
@@ -326,6 +335,7 @@
             _issueOptionsElement: null,
             _reporterCheckboxLabel: null,
             _reporterCheckboxElement: null,
+            _attachmentsCheckboxList: null,
 
             init: function () {
                 this._requestNumber = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getPage().getRequestNumber();
@@ -546,21 +556,26 @@
 
             _showAttachmentsPopup: function (sender, e) {
                 e.preventDefault();
+                var eventManager = MarvalSoftware.UI.Dom.EventManager.getInstance();
                 var template = document.querySelector('.attachmentPopupTemplate').content;
                 var templateElement = window.top.document.importNode(template, true);
-                var checkboxDiv = templateElement.querySelector(".attachmentCheckboxes");
-                this._renderAttachments(checkboxDiv);
+                this._attachmentsCheckboxList = templateElement.querySelector(".attachmentCheckboxes");
+                var selectAll = templateElement.querySelector(".selectAll");
+                var selectNone = templateElement.querySelector(".selectNone");
+                eventManager.addHandler(selectAll, "click", this._selectAllAttachments, this);
+                eventManager.addHandler(selectNone, "click", this._deselectAllAttachments, this);
+                this._renderAttachments(this._attachmentsCheckboxList);
                 var attachmentPopup = MarvalSoftware.UI.MessageBox.show(
                     "New Jira Issue",
                     templateElement,
                     MarvalSoftware.UI.MessageBox.INFORMATION,
                     [MarvalSoftware.UI.MessageBox.Buttons.OK, MarvalSoftware.UI.MessageBox.Buttons.CANCEL],
                     MarvalSoftware.UI.MessageBox.Buttons.OK,
-                    400,
+                    450,
                     MarvalSoftware.createDelegate(function (sender, e) {
                         if (e.button === MarvalSoftware.UI.MessageBox.Buttons.OK) {
-                            for (var i = 0; i < checkboxDiv.getElementsByTagName("div").length; i++) {
-                                var checkbox = checkboxDiv.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
+                            for (var i = 0; i < this._attachmentsCheckboxList.getElementsByTagName("div").length; i++) {
+                                var checkbox = this._attachmentsCheckboxList.getElementsByTagName("div")[i].getElementsByTagName("input")[0];
                                 var value = parseInt(checkbox.value, 10);
                                 if (checkbox.checked && this._selectedAttachmentIds.indexOf(value) < 0) {
                                     this._selectedAttachmentIds.push(value);
@@ -573,6 +588,18 @@
                         }
                     }, this)
                 );
+            },
+
+            _selectAllAttachments: function () {
+                for (var i = 0; i < this._attachmentsCheckboxList.getElementsByTagName("div").length; i++) {
+                    this._attachmentsCheckboxList.getElementsByTagName("div")[i].getElementsByTagName("input")[0].checked = true;
+                }
+            },
+
+            _deselectAllAttachments: function () {
+                for (var i = 0; i < this._attachmentsCheckboxList.getElementsByTagName("div").length; i++) {
+                    this._attachmentsCheckboxList.getElementsByTagName("div")[i].getElementsByTagName("input")[0].checked = false;
+                }
             },
 
             _popup: function () {
