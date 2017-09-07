@@ -463,8 +463,7 @@
                 this._issueOptionsElement = this._element.querySelector(".issueOptions");
                 this._reporterCheckboxLabel = this._issueOptionsElement.querySelector("label");
                 this._reporterCheckboxElement = this._issueOptionsElement.querySelector("input");
-                //eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
-                eventManager.addHandler(this._selectAttachmentElement, "click", this._doStuff, this);
+                eventManager.addHandler(this._selectAttachmentElement, "click", this._showAttachmentsPopup, this);
                 eventManager.addHandler(this._createElement, "click", this._createElement_click, this);
                 eventManager.addHandler(this._summaryElement, "input", this._handleInput, this);
                 eventManager.addHandler(this._typeElement, "change", this._typeElement_change, this);
@@ -472,57 +471,25 @@
                 this.appendChild(this._element);
             },
 
-            _doStuff: function () {
+            _loadProjectIssueTypes: function () {
                 $.ajax({
                     type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=DoAsyncStuff",
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    success: function (result) {
-                        console.log(result);
-                    }.bind(this),
-                    error: function (error) {
-                        this._errorPopup();
-                    }.bind(this)
-                });
-
-            },
-
-            _loadIssueTypes: function () {
-                $.ajax({
-                    type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=FetchJiraProjectNames",
+                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetProjectsIssueTypes",
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: function (result) {
                         this._typeElement.style.backgroundImage = "";
                         this._typeElement.style.display = 'block';
-                        for (var i = 0; i < result.length; i++) {
+                        var projectKeys = Object.keys(result);
+                        for (var i = 0; i < projectKeys.length; i++) {
                             var option = document.createElement("option");
                             var optionGroup = document.createElement("optgroup");
-                            optionGroup.label = result[i].key;
+                            optionGroup.label = projectKeys[i];
                             this._typeElement.add(optionGroup);
-                            this._getProjectIssueTypes(result[i].key, optionGroup);
-                        }
-                    }.bind(this),
-                    error: function (error) {
-                        this._errorPopup();
-                    }.bind(this)
-                });
-            },
 
-            _getProjectIssueTypes: function (project, optionGroup)
-            {
-                $.ajax({
-                    type: "GET",
-                    url: this._getPluginPath() + "handler/ApiHandler.ashx?action=GetProjectIssueTypes&project=" + project,
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    success: function (result) {
-                        for (var i = 0; i < result.issueTypes.length; i++) {
-                            if (!result.issueTypes[i].subtask && result.issueTypes[i].name !== "Epic") {
+                            for (var j = 0; j < result[projectKeys[i]].length; j++) {
                                 var option = document.createElement("option");
-                                option.text = result.issueTypes[i].name;
+                                option.text = result[projectKeys[i]][j];
                                 optionGroup.appendChild(option);
                             }
                         }
@@ -622,7 +589,7 @@
                         bodyElement: this
                     });
                     this._renderElement();
-                    this._loadIssueTypes();
+                    this._loadProjectIssueTypes();
                     this._loadSummaryFromDescription();
                     this._renderIssues();
                     if (this._contactEmail != null) {

@@ -183,16 +183,9 @@ public class ApiHandler : PluginHandler
             case "MoveStatus":
                 MoveMsmStatus(context.Request);
                 break;
-            case "GetProjectIssueTypes":
-                if (JiraProject.Equals("")) {
-                    JiraProject = ProjectName;
-                }
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project/{0}", JiraProject));
-                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
-                break;
-            case "FetchJiraProjectNames":
-                httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
-                context.Response.Write(ProcessRequest(httpWebRequest, this.JiraCredentials));
+            case "GetProjectsIssueTypes":
+                SortedDictionary<string, string[]> results = GetJIRAProjectIssueTypeMapping();
+                context.Response.Write(JsonConvert.SerializeObject(results));
                 break;
             case "GetJiraUsers":
                 httpWebRequest = BuildRequest(this.BaseUrl + String.Format("user/search?username={0}", this.MSMContactEmail));
@@ -207,15 +200,15 @@ public class ApiHandler : PluginHandler
                     context.Response.Write(attachmentResult);
                 }
                 break;
-            case "DoAsyncStuff":
-                SortedDictionary<string, string[]> results = GetJIRAProjectIssueTypeMapping();
-                context.Response.Write(JsonConvert.SerializeObject(results));
-                break;
         }
 
 
     }
 
+    /// <summary>
+    /// Retrieves the issue types for each JIRA project.
+    /// </summary>
+    /// <returns>A sorted dictionary of projects and their issue types.</returns>
     public SortedDictionary<string, string[]> GetJIRAProjectIssueTypeMapping()
     {
         HttpWebRequest httpWebRequest = BuildRequest(this.BaseUrl + String.Format("project"));
@@ -227,28 +220,32 @@ public class ApiHandler : PluginHandler
 
         foreach (JToken project in projects)
         {
+            //Start the task
             Task<string> task = GetProjectIssueTypesAsync(project["key"].ToString());
             task.ConfigureAwait(false);
             issueTypeTasks.Add(task);
         }
 
+        //Wait for all issue types before sorting
         Task.WaitAll(issueTypeTasks.ToArray());
 
         foreach (Task<string> task in issueTypeTasks) {
             var taskResult = JObject.Parse(task.Result);
-            var issueTypes = taskResult["issueTypes"];
+            //Filter out subtasks and Epic types and select only the issuetype's name.
+            var issueTypes = taskResult["issueTypes"].Where(type => type["subtask"].ToString().Equals("False") && !(type["name"].ToString().Equals("Epic"))).Select(type => type["name"].ToString()).ToArray();
 
-            string[] types = new string[issueTypes.Count()];
-            for (int i = 0; i < types.Length; i++) {
-                types[i] = issueTypes[i]["name"].ToString();
-            }
-            Array.Sort(types, (x,y) => String.Compare(x, y));
-            projectIssueTypes.Add(taskResult["key"].ToString(), types);
+            Array.Sort(issueTypes, (x, y) => String.Compare(x, y));
+            projectIssueTypes.Add(taskResult["key"].ToString(), issueTypes);
         }
 
         return projectIssueTypes;
     }
 
+    /// <summary>
+    /// Asyncrhonously retrieves the issue types for a given JIRA project key.
+    /// </summary>
+    /// <param name="projectKey"></param>
+    /// <returns>A task which will evantually contain a JSON string.</returns>
     public async Task<string> GetProjectIssueTypesAsync(string projectKey)
     {
         HttpWebRequest request = BuildRequest(this.BaseUrl + String.Format("project/{0}", projectKey));
@@ -262,7 +259,6 @@ public class ApiHandler : PluginHandler
             }
         }
     }
-
 
     /// <summary>
     /// Gets attachment DTOs from array of attachment Ids
