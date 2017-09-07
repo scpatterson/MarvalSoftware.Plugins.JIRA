@@ -101,12 +101,6 @@ public class ApiHandler : PluginHandler
 
     private string JiraProject { get; set; }
 
-    private string JiraProjectList { get; set; }
-
-    private string PageNo { get; set; }
-
-    private string PageLimit { get; set; }
-
     private string JiraReporter { get; set; }
 
     private string AttachmentIds { get; set; }
@@ -143,9 +137,6 @@ public class ApiHandler : PluginHandler
         JiraSummary = httpRequest.Params["issueSummary"] ?? string.Empty;
         JiraType = httpRequest.Params["issueType"] ?? string.Empty;
         JiraProject = httpRequest.Params["project"] ?? string.Empty;
-        JiraProjectList = httpRequest.Params["projectList"] ?? string.Empty;
-        PageNo = httpRequest.Params["page"] ?? string.Empty;
-        PageLimit = httpRequest.Params["pageLimit"] ?? string.Empty;
         JiraReporter = httpRequest.Params["reporter"] ?? string.Empty;
         AttachmentIds = httpRequest.Params["attachments"] ?? string.Empty;
         MSMContactEmail = httpRequest.Params["contactEmail"] ?? string.Empty;
