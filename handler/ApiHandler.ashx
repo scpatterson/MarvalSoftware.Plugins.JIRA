@@ -21,14 +21,6 @@ using System.Linq;
 public class ApiHandler : PluginHandler
 {
     //properties
-    private string ProjectName
-    {
-        get
-        {
-            return GlobalSettings["JIRAProject"];
-        }
-    }
-
     private string CustomFieldName
     {
         get
@@ -470,10 +462,6 @@ public class ApiHandler : PluginHandler
     private JObject PreRequisiteCheck()
     {
         var preReqs = new JObject();
-        if (string.IsNullOrWhiteSpace(this.ProjectName))
-        {
-            preReqs.Add("jiraProject", false);
-        }
         if (string.IsNullOrWhiteSpace(this.CustomFieldName))
         {
             preReqs.Add("jiraCustomFieldName", false);
